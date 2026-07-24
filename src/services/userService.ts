@@ -1,0 +1,79 @@
+import { get } from 'http';
+import { MessageResponse } from '../type/common'
+import { AuthResponse, LoginPayload, LoginTwoFactorPendingResponse, RegisterPayload, User } from '../type/user'
+import {api, webApi} from './api'
+
+
+
+export const userService = {
+
+
+    googleRedirect: async () => {
+        const { data } = await webApi.get<{ url: string }>('/auth/google/redirect')
+        return data
+    },
+    
+    googleCallback: async (code: string) => {
+        const { data } = await webApi.get<AuthResponse | LoginTwoFactorPendingResponse>('/auth/google/callback', {
+            params: { code }
+        })
+        return data
+    },
+
+    register: async(payload:RegisterPayload)=>{
+        const {data} = await api.post<AuthResponse>('/auth/register',payload)
+        return data
+    },
+
+    login: async(payload:LoginPayload)=>{
+        const {data} = await api.post<AuthResponse | LoginTwoFactorPendingResponse>('/auth/login',payload)
+        return data
+    },
+
+    logout: async()=>{
+        const {data} = await api.post<MessageResponse>('/auth/logout')
+        return data
+    },
+
+    me: async()=>{
+        const {data} = await api.get<User>('/auth/me')
+        return data
+    },
+
+    updateProfile: async (payload: Partial<Pick<User, 'name' | 'email' |'avatar'>>)=>{
+        const {data} = await api.put<{user: User}>('/auth/profile',payload)
+        return data
+    },
+
+    changePassword: async(payload:{current_password: string;new_password: string;new_password_confirmation: string;})=>{
+        const {data} = await api.put<MessageResponse>('/auth/profile/password',payload)
+        return data
+    },
+
+    setupTwoFactor: async ()=>{
+        const {data} = await api.post<{secret: string; qr_code_svg: string}>('/auth/2fa/setup')
+        return data
+    },
+
+    confirmTwoFactor: async (code: string)=>{
+        const {data} = await api.post<{ recovery_codes: string[] }>('/auth/2fa/confirm', { code })
+        return data
+    },
+
+    allUsers: async():Promise<User[]>=>{
+        const {data} = await api.get('/users')
+        return data
+    },
+
+    // À appeler avec le temp_token reçu au login (ability 2fa-pending)
+    verifyTwoFactor: async (code: string) =>{
+        const {data} = await api.post<AuthResponse>('/auth/2fa/verify', { code })
+        return data
+    },
+
+    deleteUser : async(id: number)=>{
+        const {data} = await api.delete<MessageResponse>(`/users/${id}`)
+        return data
+    }
+
+}

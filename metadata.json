@@ -1,0 +1,6 @@
+{
+  "name": "Passerelle SMS Android SaaS",
+  "description": "Template complet de SaaS de gestion d'envois SMS via passerelles Android avec landing page, docs API, dashboard admin, auth et politique de confidentialité.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
