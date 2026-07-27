@@ -1,4 +1,4 @@
-import { apiKeyService } from "@/src/services/apiKeyService";
+import { apiKeyService } from "@/services/apiKeyService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useAllApikey(){

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { use, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -19,7 +19,20 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../../components/ui/alert-dialog";
+
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
+import { useLogout, useMe } from '../hook/features/useUser';
 
 const NAV_ITEMS = [
   { path: '/admin', label: 'Vue d’ensemble', icon: LayoutDashboard },
@@ -33,10 +46,21 @@ const NAV_ITEMS = [
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const {data: user} = useMe()
+  const { mutate: logout, isPending } = useLogout();
   const location = useLocation();
   const navigate = useNavigate();
 
   const activeItem = NAV_ITEMS.find((item) => item.path === location.pathname) || NAV_ITEMS[0];
+
+  const handleLogout = ()=>{
+    logout(undefined,{
+      onSuccess: ()=>{
+        navigate('/login')
+      }
+    })
+  }
 
   return (
     <div className="min-h-screen bg-slate-100/70 flex flex-col md:flex-row antialiased font-sans text-slate-900">
@@ -161,7 +185,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </button>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-slate-900">{activeItem.label}</h1>
-              <span className="hidden sm:inline-block text-xs text-slate-400">/ Acme Tech</span>
+              <span className="hidden sm:inline-block text-xs text-slate-400">/ {use?.organisation?.name} </span>
             </div>
           </div>
 
@@ -187,18 +211,28 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenuTrigger>
                 <div className="flex items-center gap-2 pl-2 border-l border-slate-200 cursor-pointer">
                   <div className="h-8 w-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                    AT
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="h-8 w-8 rounded-full object-cover shadow-xs"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                        {user?.name?.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
                   </div>
                   <div className="hidden sm:flex flex-col text-left">
-                    <span className="text-xs font-bold text-slate-800 leading-tight">Acme Tech</span>
-                    <span className="text-[10px] text-slate-500">Plan Business</span>
+                    <span className="text-xs font-bold text-slate-800 leading-tight"> {user?.name} </span>
+                    <span className="text-[10px] text-slate-500"> Plan {user?.active_subscription?.plan?.name} </span>
                   </div>
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="right" className="w-56">
                 <div className="px-3 py-2 text-xs">
-                  <p className="font-semibold text-slate-900">Acme Technologies SAS</p>
-                  <p className="text-slate-500 truncate">admin@acme-tech.fr</p>
+                  <p className="font-semibold text-slate-900">{user?.name}</p>
+                  <p className="text-slate-500 truncate">{user?.email}</p>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/admin/organisation')}>
@@ -210,7 +244,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                   Gérer l'abonnement
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/')} destructive>
+                <DropdownMenuItem 
+                  destructive
+                  onClick={() => setLogoutDialogOpen(true)}
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   Déconnexion
                 </DropdownMenuItem>
@@ -224,6 +261,26 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+
+      {/* AlertDialog de confirmation, en dehors du DropdownMenu */}
+      <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Se déconnecter ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tu vas être déconnecté de ton espace admin. Tu devras te reconnecter
+              pour y accéder à nouveau.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout} disabled={isPending}>
+              {isPending ? "Déconnexion..." : "Se déconnecter"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }

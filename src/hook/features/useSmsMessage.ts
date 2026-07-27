@@ -1,5 +1,5 @@
-import { smsMessageService } from "@/src/services/smsMessageService";
-import { SendSmsPayload, SmsStatus } from "@/src/type/smsMessage";
+import { smsMessageService } from "@/services/smsMessageService";
+import { SendSmsPayload, SmsStatus } from "@/type/smsMessage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useSendSms(apiKey: string) {
@@ -24,4 +24,11 @@ export function useSmsList(apiKey: string, status?: SmsStatus) {
         queryFn: () => smsMessageService.list(apiKey, status),
         enabled: !!apiKey,
     });
+}
+
+export function useSmsHistory(status?: string){
+  return useQuery({
+    queryKey: ['sms-logs', status],
+    queryFn: ()=> smsMessageService.getHistory(status)
+  })
 }

@@ -1,4 +1,4 @@
-import { deviceService } from "@/src/services/deviceService";
+import { deviceService } from "@/services/deviceService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useAllDevice(){

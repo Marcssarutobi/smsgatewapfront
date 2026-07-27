@@ -1,4 +1,4 @@
-import { organisationService } from "@/src/services/organisationService";
+import { organisationService } from "@/services/organisationService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useGetOrganisation(){

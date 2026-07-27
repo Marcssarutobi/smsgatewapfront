@@ -1,4 +1,4 @@
-import { planService } from "@/src/services/planService";
+import { planService } from "@/services/planService";
 import { useQuery } from "@tanstack/react-query";
 
 export function usePlans() {

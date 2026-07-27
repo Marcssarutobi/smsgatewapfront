@@ -1,6 +1,6 @@
-import { tokenStorage } from "@/src/lib/tokenStorage";
-import { userService } from "@/src/services/userService";
-import { LoginPayload, User } from "@/src/type/user";
+import { tokenStorage } from "@/lib/tokenStorage";
+import { userService } from "@/services/userService";
+import { LoginPayload, RegisterPayload, User } from "@/type/user";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 
@@ -9,6 +9,16 @@ export function useMe(){
         queryKey: ['me'],
         queryFn: ()=>userService.me(),
         enabled: !!tokenStorage.get(),
+    })
+}
+
+export function useRegister(){
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (payload: RegisterPayload)=>userService.register(payload),
+        onSuccess:()=>{
+            queryClient.invalidateQueries({queryKey:['me']})
+        }
     })
 }
 

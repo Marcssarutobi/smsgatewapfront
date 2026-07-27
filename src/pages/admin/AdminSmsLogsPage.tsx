@@ -18,25 +18,28 @@ import { Badge } from '../../components/ui/badge';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import { MOCK_SMS_LOGS } from '../../data/mockData';
 import { SmsLog } from '../../types';
+import { useSmsHistory } from '@/hook/features/useSmsMessage';
 
 export function AdminSmsLogsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [exportMessage, setExportMessage] = useState<string | null>(null);
 
-  const filteredLogs = MOCK_SMS_LOGS.filter((log) => {
-    const matchesSearch =
-      log.recipient.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.id.toLowerCase().includes(searchQuery.toLowerCase());
+  const { data: smsLogs = [], isLoading } = useSmsHistory(
+    selectedStatus === 'all' ? undefined : selectedStatus
+  );
 
-    const matchesStatus = selectedStatus === 'all' || log.status === selectedStatus;
-
-    return matchesSearch && matchesStatus;
+  const filteredLogs = smsLogs.filter((log) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      log.recipient.toLowerCase().includes(query) ||
+      log.content.toLowerCase().includes(query) ||
+      String(log.id).includes(query)
+    );
   });
 
   const handleExport = () => {
-    setExportMessage('Exportation de 8 entrées au format CSV...');
+    setExportMessage(`Exportation de ${filteredLogs.length} entrées au format CSV...`);
     setTimeout(() => setExportMessage(null), 3000);
   };
 
@@ -47,12 +50,22 @@ export function AdminSmsLogsPage() {
       case 'sent':
         return <Badge variant="default">Envoyé</Badge>;
       case 'queued':
+      case 'pending':
         return <Badge variant="warning">En attente</Badge>;
       case 'failed':
         return <Badge variant="destructive">Échec</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
+  };
+
+  const formatDate = (isoDate: string) => {
+    return new Date(isoDate).toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   return (
@@ -145,7 +158,7 @@ export function AdminSmsLogsPage() {
                 <TableRow key={log.id}>
                   <TableCell className="font-mono text-xs">
                     <span className="font-bold text-slate-900 block">{log.id}</span>
-                    <span className="text-[10px] text-slate-400">{log.createdAt}</span>
+                    <span className="text-[10px] text-slate-400">{formatDate(log.created_at)}</span>
                   </TableCell>
 
                   <TableCell className="font-mono text-xs font-bold text-slate-800">
@@ -153,29 +166,35 @@ export function AdminSmsLogsPage() {
                   </TableCell>
 
                   <TableCell className="text-xs text-slate-600 max-w-[320px] leading-relaxed">
-                    <p className="line-clamp-2">{log.message}</p>
-                    {log.errorMessage && (
+                    <p className="line-clamp-2">{log.content}</p>
+                    {log.error_message  && (
                       <p className="text-[10px] text-red-600 font-medium mt-0.5">
-                        Erreur: {log.errorMessage}
+                        Erreur: {log.error_message }
                       </p>
                     )}
                   </TableCell>
 
                   <TableCell className="text-xs text-slate-700">
-                    <div className="flex items-center gap-1.5">
-                      <Smartphone className="h-3.5 w-3.5 text-slate-400" />
-                      <span className="font-medium">{log.deviceName}</span>
-                    </div>
-                    <span className="text-[10px] text-slate-400 block ml-5">
-                      SIM {log.simSlot} ({log.carrier})
-                    </span>
+                    {log.device_sim ? (
+                      <>
+                        <div className="flex items-center gap-1.5">
+                          <Smartphone className="h-3.5 w-3.5 text-slate-400" />
+                          <span className="font-medium">{log.device_sim.device?.name}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 block ml-5">
+                          SIM {log.device_sim.slot_index} ({log.device_sim.operator})
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
                   </TableCell>
 
                   <TableCell>{getStatusBadge(log.status)}</TableCell>
                 </TableRow>
               ))}
 
-              {filteredLogs.length === 0 && (
+              {!isLoading && filteredLogs.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-sm text-slate-400">
                     Aucun SMS ne correspond à vos critères de recherche.

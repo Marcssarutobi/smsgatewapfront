@@ -2,6 +2,7 @@ import { get } from 'http';
 import { MessageResponse } from '../type/common'
 import { AuthResponse, LoginPayload, LoginTwoFactorPendingResponse, RegisterPayload, User } from '../type/user'
 import {api, webApi} from './api'
+import { tokenStorage } from '@/lib/tokenStorage';
 
 
 
@@ -27,6 +28,13 @@ export const userService = {
 
     login: async(payload:LoginPayload)=>{
         const {data} = await api.post<AuthResponse | LoginTwoFactorPendingResponse>('/auth/login',payload)
+        
+        // Si la 2FA n'est pas requise, on a un vrai token final -> on le stocke
+        if ('token' in data) {
+            tokenStorage.set(data.token)
+            api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+        }
+
         return data
     },
 

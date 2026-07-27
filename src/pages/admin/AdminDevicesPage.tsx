@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Smartphone,
   Plus,
@@ -19,23 +19,67 @@ import {
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
+import { QRCodeSVG } from 'qrcode.react';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../../components/ui/dialog';
-import { MOCK_DEVICES } from '../../data/mockData';
-import { AndroidDevice } from '../../types';
+import { useAllDevice, useGeneratePairingCode } from '@/hook/features/useDevice';
+
 
 export function AdminDevicesPage() {
-  const [devices, setDevices] = useState<AndroidDevice[]>(MOCK_DEVICES);
+  const {data: devices=[], isLoading} = useAllDevice()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(0);
 
-  const pairingKey = 'GW-PAIR-9841-3A2B';
+  const {
+    mutate: generatePairingCode,
+    data: pairingData,
+    isPending: isGenerating,
+    reset: resetPairingCode
+  } = useGeneratePairingCode()
+
+  // Génère un code dès l'ouverture du modal
+  useEffect(() => {
+    if (isAddModalOpen) {
+      generatePairingCode(undefined, {
+        onSuccess: (data) => {
+          setSecondsLeft(data.expires_in);
+        },
+      });
+    } else {
+      resetPairingCode();
+    }
+  }, [isAddModalOpen]);
+
+  // Compte à rebours d'expiration (10 min)
+  useEffect(() => {
+    if (!pairingData || secondsLeft <= 0) return;
+
+    const interval = setInterval(() => {
+      setSecondsLeft((s) => Math.max(0, s - 1));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [pairingData, secondsLeft > 0]);
+
+ 
 
   const handleCopyKey = () => {
-    navigator.clipboard.writeText(pairingKey);
+    if (!pairingData) return;
+    navigator.clipboard.writeText(pairingData.pairing_token);
     setCopiedKey(true);
     setTimeout(() => setCopiedKey(false), 2000);
   };
+
+  const handleRegenerate = () => {
+    generatePairingCode(undefined, {
+      onSuccess: (data) => {
+        setSecondsLeft(data.expires_in);
+      },
+    });
+  };
+
+  const isExpired = pairingData && secondsLeft <= 0;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -61,6 +105,23 @@ export function AdminDevicesPage() {
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
+  };
+
+  const formatLastSeen = (isoDate: string | null) => {
+    if (!isoDate) return '—';
+    const date = new Date(isoDate);
+    return date.toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const formatTime = (totalSeconds: number) => {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -100,79 +161,88 @@ export function AdminDevicesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {devices.map((dev) => (
-                <TableRow key={dev.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 shrink-0">
-                        <Smartphone className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-900 text-xs sm:text-sm">{dev.name}</p>
-                        <p className="text-[11px] text-slate-400 font-mono">
-                          {dev.model} • {dev.androidVersion}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
+              {devices.map((dev) => {
 
-                  <TableCell>
-                    <div className="space-y-1">
-                      {getStatusBadge(dev.status)}
-                      <div className="flex items-center gap-1.5 text-xs text-slate-600 font-mono">
-                        {dev.isPluggedIn ? (
-                          <BatteryCharging className="h-4 w-4 text-emerald-600" />
-                        ) : (
-                          <Battery
-                            className={`h-4 w-4 ${
-                              dev.batteryLevel < 20 ? 'text-red-500' : 'text-slate-500'
-                            }`}
-                          />
-                        )}
-                        <span>{dev.batteryLevel}%</span>
-                        {dev.isPluggedIn && <span className="text-[10px] text-emerald-600">(Secteur)</span>}
-                      </div>
-                    </div>
-                  </TableCell>
+                const smsSentToday = dev.sims?.reduce((sum, s) => sum + s.sent_today, 0) ?? 0;
+                const smsLimitDaily = dev.sims?.reduce((sum, s) => sum + s.daily_quota, 0) ?? 0;
 
-                  <TableCell>
-                    <div className="space-y-1.5">
-                      {dev.sims.map((sim) => (
-                        <div key={sim.slot} className="flex items-center gap-2 text-xs">
-                          <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">
-                            SIM {sim.slot}
-                          </span>
-                          <span className="font-medium text-slate-800">{sim.carrier}</span>
-                          <span className="text-[10px] text-slate-400 font-mono">({sim.phoneNumber})</span>
+                return (
+                  <TableRow key={dev.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 shrink-0">
+                          <Smartphone className="h-5 w-5" />
                         </div>
-                      ))}
-                    </div>
-                  </TableCell>
-
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs font-semibold text-slate-700">
-                        <span>{dev.smsSentToday} SMS</span>
-                        <span className="text-slate-400 text-[10px]">{dev.smsLimitDaily} max</span>
+                        <div>
+                          <p className="font-bold text-slate-900 text-xs sm:text-sm">{dev.name}</p>
+                          <p className="text-[11px] text-slate-400 font-mono">
+                            {dev.android_device_id} 
+                          </p>
+                        </div>
                       </div>
-                      <div className="w-28 bg-slate-100 rounded-full h-1.5">
-                        <div
-                          className="bg-indigo-600 h-1.5 rounded-full"
-                          style={{ width: `${Math.min(100, (dev.smsSentToday / dev.smsLimitDaily) * 100)}%` }}
-                        />
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="space-y-1">
+                        {getStatusBadge(dev.status)}
+                        <div className="flex items-center gap-1.5 text-xs text-slate-600 font-mono">
+                            <Battery
+                              className={`h-4 w-4 ${
+                                dev.battery_level != null && dev.battery_level < 20
+                                  ? 'text-red-500'
+                                  : 'text-slate-500'
+                              }`}
+                            />
+                            <span>{dev.battery_level != null ? `${dev.battery_level}%` : '—'}</span>
+                          </div>
                       </div>
-                    </div>
-                  </TableCell>
+                    </TableCell>
 
-                  <TableCell className="text-xs text-slate-500">{dev.lastSeen}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1.5">
+                        {dev.sims?.map((sim) => (
+                          <div key={sim.slot_index} className="flex items-center gap-2 text-xs">
+                            <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">
+                              SIM {sim.slot_index + 1}
+                            </span>
+                            <span className="font-medium text-slate-800">{sim.operator}</span>
+                            <span className="text-[10px] text-slate-400 font-mono">({sim.phone_number})</span>
+                          </div>
+                        ))}
+                      </div>
+                    </TableCell>
 
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <MoreVertical className="h-4 w-4 text-slate-500" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs font-semibold text-slate-700">
+                          <span>{smsSentToday} SMS</span>
+                          <span className="text-slate-400 text-[10px]">{smsLimitDaily} max</span>
+                        </div>
+                        <div className="w-28 bg-slate-100 rounded-full h-1.5">
+                          <div
+                            className="bg-indigo-600 h-1.5 rounded-full"
+                            style={{
+                              width: `${
+                                smsLimitDaily > 0
+                                  ? Math.min(100, (smsSentToday / smsLimitDaily) * 100)
+                                  : 0
+                              }%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="text-xs text-slate-500">{formatLastSeen(dev.last_seen_at)}</TableCell>
+
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreVertical className="h-4 w-4 text-slate-500" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>
@@ -221,40 +291,48 @@ export function AdminDevicesPage() {
           {/* QR Code Visual Box */}
           <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-50 border border-slate-200">
             {/* SVG simulated QR Code */}
-            <div className="h-44 w-44 bg-white p-3 rounded-xl border border-slate-300 shadow-sm flex items-center justify-center">
-              <svg className="w-full h-full text-slate-900" viewBox="0 0 100 100" fill="currentColor">
-                <rect x="0" y="0" width="30" height="30" />
-                <rect x="5" y="5" width="20" height="20" fill="white" />
-                <rect x="10" y="10" width="10" height="10" />
+            {isGenerating && (
+              <div className="h-44 w-44 flex items-center justify-center text-slate-400 text-xs">
+                Génération du QR code...
+              </div>
+            )}
 
-                <rect x="70" y="0" width="30" height="30" />
-                <rect x="75" y="5" width="20" height="20" fill="white" />
-                <rect x="80" y="10" width="10" height="10" />
+            {!isGenerating && pairingData && !isExpired && (
+              <div className="h-44 w-44 bg-white p-3 rounded-xl border border-slate-300 shadow-sm flex items-center justify-center">
+                <QRCodeSVG value={pairingData.qr_payload} size={152} />
+              </div>
+            )}
 
-                <rect x="0" y="70" width="30" height="30" />
-                <rect x="5" y="75" width="20" height="20" fill="white" />
-                <rect x="10" y="80" width="10" height="10" />
+            {!isGenerating && isExpired && (
+              <div className="h-44 w-44 flex flex-col items-center justify-center gap-2 text-center px-4">
+                <p className="text-xs text-slate-500">Ce code a expiré.</p>
+                <Button size="sm" variant="outline" onClick={handleRegenerate} className="gap-1.5">
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Regénérer un code
+                </Button>
+              </div>
+            )}
 
-                <rect x="40" y="10" width="10" height="20" />
-                <rect x="20" y="40" width="20" height="10" />
-                <rect x="50" y="50" width="20" height="20" />
-                <rect x="80" y="40" width="10" height="30" />
-                <rect x="40" y="80" width="30" height="10" />
-              </svg>
-            </div>
+            {pairingData && !isExpired && (
+              <>
+                <p className="mt-3 text-[10px] text-slate-400">
+                  Expire dans <span className="font-semibold text-slate-600">{formatTime(secondsLeft)}</span>
+                </p>
 
-            <div className="mt-4 flex items-center gap-2">
-              <span className="text-xs text-slate-500 font-medium">Clé d'association manuelle :</span>
-              <code className="bg-slate-200 px-2 py-1 rounded text-xs font-mono font-bold text-slate-800">
-                {pairingKey}
-              </code>
-              <button
-                onClick={handleCopyKey}
-                className="text-slate-500 hover:text-indigo-600 p-1 rounded cursor-pointer"
-              >
-                {copiedKey ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-              </button>
-            </div>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs text-slate-500 font-medium">Clé d'association manuelle :</span>
+                  <code className="bg-slate-200 px-2 py-1 rounded text-xs font-mono font-bold text-slate-800">
+                    {pairingData.pairing_token}
+                  </code>
+                  <button
+                    onClick={handleCopyKey}
+                    className="text-slate-500 hover:text-indigo-600 p-1 rounded cursor-pointer"
+                  >
+                    {copiedKey ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

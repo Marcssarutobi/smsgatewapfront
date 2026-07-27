@@ -4,23 +4,51 @@ import { Smartphone, Mail, Lock, User, ArrowRight, ShieldCheck } from 'lucide-re
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
+import toast from 'react-hot-toast'
 import { userService } from '../services/userService';
+import { useRegister } from '@/hook/features/useUser';
 
 export function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [password_confirmation, setPassword_Confirmation] = useState('');
   const [agreed, setAgreed] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const {mutate:register, isPending, error} = useRegister()
+
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    register(
+      {name,email,password,password_confirmation},
+      {
+        onSuccess: ()=>{
+          navigate('/admin')
+        },
+        onError: (err: any) => {
+          const validationErrors = err?.response?.data?.errors;
+
+          if (validationErrors) {
+            // affiche le premier message de chaque champ en erreur
+            Object.values(validationErrors)
+              .flat()
+              .forEach((message) => toast.error(message as string));
+          } else {
+            toast.error('Une erreur est survenue, réessayez.');
+          }
+        }
+      }
+    )
+
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate('/admin');
-    }, 600);
+    // setTimeout(() => {
+    //   setIsLoading(false);
+    //   navigate('/admin');
+    // }, 600);
   };
 
   const handleGoogleLogin = async () => {
@@ -121,6 +149,21 @@ export function RegisterPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="pl-9"
+                    placeholder="••••••••••••"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700">Confirmez mot de passe </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Input
+                    type="password"
+                    required
+                    value={password_confirmation}
+                    onChange={(e) => setPassword_Confirmation(e.target.value)}
                     className="pl-9"
                     placeholder="••••••••••••"
                   />

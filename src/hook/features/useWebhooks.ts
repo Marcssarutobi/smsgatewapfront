@@ -1,4 +1,4 @@
-import { webhookService } from "@/src/services/webhookService";
+import { webhookService } from "@/services/webhookService";
 import {  useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useWebhooks() {

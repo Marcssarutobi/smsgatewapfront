@@ -3,21 +3,53 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Smartphone, Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import toast from 'react-hot-toast'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
+import { userService } from '@/services/userService';
+import { useLogin } from '@/hook/features/useUser';
 
 export function LoginPage() {
   const [email, setEmail] = useState('admin@acme-tech.fr');
   const [password, setPassword] = useState('••••••••••••');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const {mutate:login, isPending, error} = useLogin()
+
+  const handleGoogleLogin = async () => {
+    const { url } = await userService.googleRedirect();
+    window.location.href = url;
+  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    login(
+      {email,password},
+      {
+        onSuccess: ()=>{
+          navigate('/admin')
+        },
+        onError: (err: any) => {
+          const validationErrors = err?.response?.data?.errors;
+
+          if (validationErrors) {
+            // affiche le premier message de chaque champ en erreur
+            Object.values(validationErrors)
+              .flat()
+              .forEach((message) => toast.error(message as string));
+          } else {
+            toast.error('Une erreur est survenue, réessayez.');
+          }
+        }
+      }
+    )
+
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate('/2fa');
-    }, 600);
+    // setTimeout(() => {
+    //   setIsLoading(false);
+    //   navigate('/2fa');
+    // }, 600);
   };
 
   return (
@@ -42,7 +74,7 @@ export function LoginPage() {
               variant="outline"
               type="button"
               className="w-full justify-center gap-2 font-medium text-slate-700 h-10"
-              onClick={() => navigate('/admin')}
+              onClick={handleGoogleLogin}
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24">
                 <path
@@ -111,8 +143,10 @@ export function LoginPage() {
                 </div>
               </div>
 
+              {error && <p>Identifiants incorrects</p>}
+
               <Button type="submit" className="w-full font-semibold h-11" disabled={isLoading}>
-                {isLoading ? 'Vérification...' : 'Se connecter'}
+                {isPending ? 'Vérification...' : 'Se connecter'}
                 <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </form>

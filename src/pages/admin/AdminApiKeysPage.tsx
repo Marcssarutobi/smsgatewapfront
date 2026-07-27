@@ -8,7 +8,6 @@ import {
   EyeOff,
   Trash2,
   ShieldCheck,
-  AlertCircle
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -16,20 +15,36 @@ import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../../components/ui/dialog';
-import { MOCK_API_KEYS } from '../../data/mockData';
-import { ApiKey } from '../../types';
+import { useAllApikey, useCreateApiKey, useDeleteApiKey, useRevokeApiKey } from '@/hook/features/useApiKey';
+
+interface CreatedKey {
+  id: number;
+  name: string;
+  environment: string;
+  key: string;
+}
 
 export function AdminApiKeysPage() {
-  const [keys, setKeys] = useState<ApiKey[]>(MOCK_API_KEYS);
-  const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
-  const [revealedKeyId, setRevealedKeyId] = useState<string | null>(null);
+  const { data: keys = [], isLoading } = useAllApikey();
+  const { mutate: createApiKey, isPending: isCreating } = useCreateApiKey();
+  const { mutate: revokeApiKey } = useRevokeApiKey();
+  const { mutate: deleteApiKey } = useDeleteApiKey();
+
+  const [copiedKeyId, setCopiedKeyId] = useState<number | string | null>(null);
+  const [revealedKeyId, setRevealedKeyId] = useState<number | null>(null);
 
   // Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
-  const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [createdKeys, setCreatedKeys] = useState<CreatedKey[] | null>(null);
 
-  const handleCopy = (id: string, text: string) => {
+  // Dérive l'environnement depuis le préfixe de la clé (fiable même si
+  // la colonne `environment` en base n'a pas encore été corrigée côté backend)
+  const getEnvironment = (key: string) => (key.startsWith('sk_live_') ? 'live' : 'test');
+
+  const maskKey = (key: string) => `${key.slice(0, 12)}••••••••••••${key.slice(-4)}`;
+
+  const handleCopy = (id: number | string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKeyId(id);
     setTimeout(() => setCopiedKeyId(null), 2000);
@@ -37,29 +52,20 @@ export function AdminApiKeysPage() {
 
   const handleCreateKey = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newKeyName.trim()) return;
 
-    const generated = `sk_live_new_${Math.random().toString(36).substring(2, 12)}_${Math.random().toString(36).substring(2, 10)}`;
-    const newEntry: ApiKey = {
-      id: `key_${Date.now()}`,
-      name: newKeyName,
-      prefix: 'sk_live_new',
-      keyMasked: `${generated.substring(0, 12)}••••••••••••${generated.substring(generated.length - 4)}`,
-      fullKey: generated,
-      status: 'active',
-      createdAt: new Date().toISOString().split('T')[0],
-      lastUsedAt: 'Jamais',
-      permissions: ['sms.send', 'sms.read']
-    };
-
-    setKeys([newEntry, ...keys]);
-    setCreatedKey(generated);
+    createApiKey(newKeyName || undefined, {
+      onSuccess: (data) => {
+        setCreatedKeys(data.keys);
+      },
+    });
   };
 
-  const handleRevokeKey = (id: string) => {
-    setKeys(
-      keys.map((k) => (k.id === id ? { ...k, status: 'revoked' as const } : k))
-    );
+  const handleRevoke = (id: number) => {
+    revokeApiKey(id);
+  };
+
+  const handleDelete = (id: number) => {
+    deleteApiKey(id);
   };
 
   return (
@@ -72,7 +78,10 @@ export function AdminApiKeysPage() {
             Créez et gérez les clés d'accès nécessaires pour authentifier vos requêtes HTTP REST.
           </p>
         </div>
-        <Button onClick={() => { setCreatedKey(null); setNewKeyName(''); setIsCreateModalOpen(true); }} className="font-semibold gap-2 shadow-sm">
+        <Button
+          onClick={() => { setCreatedKeys(null); setNewKeyName(''); setIsCreateModalOpen(true); }}
+          className="font-semibold gap-2 shadow-sm"
+        >
           <Plus className="h-4 w-4" />
           Générer une clé API
         </Button>
@@ -85,7 +94,7 @@ export function AdminApiKeysPage() {
           <div className="text-xs text-amber-900 space-y-1">
             <p className="font-bold">Consignes de Sécurité Importantes</p>
             <p className="text-amber-800 leading-relaxed">
-              Vos clés API possèdent les privilèges d’envoi de SMS sur vos appareils. Ne partagez jamais vos clés privées dans du code client JavaScript public ou des répertoires Git publics.
+              Vos clés API possèdent les privilèges d'envoi de SMS sur vos appareils. Ne partagez jamais vos clés privées dans du code client JavaScript public ou des répertoires Git publics.
             </p>
           </div>
         </CardContent>
@@ -104,8 +113,8 @@ export function AdminApiKeysPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nom de la Clé</TableHead>
-                <TableHead>Clé Masquée</TableHead>
-                <TableHead>Permissions</TableHead>
+                <TableHead>Environnement</TableHead>
+                <TableHead>Clé</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead>Créée le</TableHead>
                 <TableHead>Dernière Utilisation</TableHead>
@@ -113,39 +122,45 @@ export function AdminApiKeysPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {keys.map((k) => (
+              {isLoading && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-sm text-slate-400">
+                    Chargement des clés...
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {!isLoading && keys.map((k) => (
                 <TableRow key={k.id}>
                   <TableCell className="font-bold text-xs text-slate-900">{k.name}</TableCell>
+
+                  <TableCell>
+                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                      getEnvironment(k.key) === 'live'
+                        ? 'bg-indigo-100 text-indigo-700'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {getEnvironment(k.key)}
+                    </span>
+                  </TableCell>
 
                   <TableCell className="font-mono text-xs">
                     <div className="flex items-center gap-2">
                       <span className="bg-slate-100 px-2 py-1 rounded text-slate-800 border border-slate-200">
-                        {revealedKeyId === k.id && k.fullKey ? k.fullKey : k.keyMasked}
+                        {revealedKeyId === k.id ? k.key : maskKey(k.key)}
                       </span>
-                      {k.fullKey && (
-                        <button
-                          onClick={() => setRevealedKeyId(revealedKeyId === k.id ? null : k.id)}
-                          className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
-                        >
-                          {revealedKeyId === k.id ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                        </button>
-                      )}
                       <button
-                        onClick={() => handleCopy(k.id, k.fullKey || k.keyMasked)}
+                        onClick={() => setRevealedKeyId(revealedKeyId === k.id ? null : k.id)}
+                        className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                      >
+                        {revealedKeyId === k.id ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      </button>
+                      <button
+                        onClick={() => handleCopy(k.id, k.key)}
                         className="text-slate-400 hover:text-indigo-600 p-1 cursor-pointer"
                       >
                         {copiedKeyId === k.id ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
                       </button>
-                    </div>
-                  </TableCell>
-
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {k.permissions.map((perm) => (
-                        <span key={perm} className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-mono">
-                          {perm}
-                        </span>
-                      ))}
                     </div>
                   </TableCell>
 
@@ -157,24 +172,45 @@ export function AdminApiKeysPage() {
                     )}
                   </TableCell>
 
-                  <TableCell className="text-xs text-slate-500">{k.createdAt}</TableCell>
-                  <TableCell className="text-xs text-slate-500">{k.lastUsedAt}</TableCell>
+                  <TableCell className="text-xs text-slate-500">
+                    {new Date(k.created_at).toLocaleDateString('fr-FR')}
+                  </TableCell>
+                  <TableCell className="text-xs text-slate-500">
+                    {k.last_used_at ? new Date(k.last_used_at).toLocaleString('fr-FR') : 'Jamais'}
+                  </TableCell>
 
                   <TableCell className="text-right">
-                    {k.status === 'active' && (
+                    <div className="flex justify-end gap-1">
+                      {k.status === 'active' && (
+                        <Button
+                          onClick={() => handleRevoke(k.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+                        >
+                          Révoquer
+                        </Button>
+                      )}
                       <Button
-                        onClick={() => handleRevokeKey(k.id)}
+                        onClick={() => handleDelete(k.id)}
                         variant="ghost"
                         size="sm"
                         className="text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
                       >
-                        <Trash2 className="h-3.5 w-3.5 mr-1" />
-                        Révoquer
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
-                    )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
+
+              {!isLoading && keys.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-sm text-slate-400">
+                    Aucune clé API pour le moment.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -189,17 +225,16 @@ export function AdminApiKeysPage() {
             Créer une nouvelle clé API
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Donnez un nom explicite pour identifier l'application qui utilisera cette clé.
+            Une clé de <strong>test</strong> et une clé de <strong>production</strong> seront générées ensemble.
           </DialogDescription>
         </DialogHeader>
 
-        {!createdKey ? (
+        {!createdKeys ? (
           <form onSubmit={handleCreateKey} className="space-y-4 my-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700">Nom / Utilisation de la clé</label>
               <Input
                 type="text"
-                required
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
                 placeholder="Ex: Serveur Production - Backend Laravel"
@@ -210,37 +245,45 @@ export function AdminApiKeysPage() {
               <Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>
                 Annuler
               </Button>
-              <Button type="submit" className="font-semibold">
-                Générer la clé
+              <Button type="submit" className="font-semibold" disabled={isCreating}>
+                {isCreating ? 'Génération...' : 'Générer les clés'}
               </Button>
             </DialogFooter>
           </form>
         ) : (
           <div className="space-y-4 my-4">
-            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 space-y-2">
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 space-y-3">
               <p className="font-bold flex items-center gap-1.5 text-emerald-800">
                 <Check className="h-4 w-4 text-emerald-600" />
-                Clé API générée avec succès !
+                Clés API générées avec succès !
               </p>
               <p className="text-slate-600">
-                Copiez cette clé maintenant. Pour des raisons de sécurité, vous ne pourrez plus la revoir en entier ultérieurement.
+                Copiez ces clés maintenant. Tu pourras toujours les revoir dans le tableau ensuite.
               </p>
-              <div className="flex items-center gap-2 pt-2">
-                <code className="bg-white p-2.5 rounded border border-emerald-300 font-mono text-xs font-bold text-slate-900 flex-1 break-all select-all">
-                  {createdKey}
-                </code>
-                <Button
-                  size="sm"
-                  onClick={() => handleCopy('modal_key', createdKey)}
-                  className="shrink-0 font-semibold"
-                >
-                  {copiedKeyId === 'modal_key' ? 'Copiée !' : 'Copier'}
-                </Button>
-              </div>
+
+              {createdKeys.map((k) => (
+                <div key={k.id} className="space-y-1">
+                  <span className="text-[10px] font-semibold text-emerald-700 uppercase">
+                    {getEnvironment(k.key)} — {k.name}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <code className="bg-white p-2.5 rounded border border-emerald-300 font-mono text-xs font-bold text-slate-900 flex-1 break-all select-all">
+                      {k.key}
+                    </code>
+                    <Button
+                      size="sm"
+                      onClick={() => handleCopy(k.id, k.key)}
+                      className="shrink-0 font-semibold"
+                    >
+                      {copiedKeyId === k.id ? 'Copiée !' : 'Copier'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <DialogFooter>
-              <Button onClick={() => setIsCreateModalOpen(false)}>J'ai copié ma clé API</Button>
+              <Button onClick={() => setIsCreateModalOpen(false)}>Terminé</Button>
             </DialogFooter>
           </div>
         )}

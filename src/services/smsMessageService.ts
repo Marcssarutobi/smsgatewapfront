@@ -1,3 +1,4 @@
+import { SmsStatusLog } from "@/type/smsStatusLog";
 import { SendSmsPayload, SendSmsResponse, SmsMessage, SmsStatus } from "../type/smsMessage";
 import { api } from "./api";
 
@@ -23,6 +24,13 @@ export const smsMessageService = {
             params: { status },
         })
         .then((r) => r.data)
+    },
+
+    getHistory: async(status?: string):Promise<SmsStatusLog[]>=>{
+        const {data} = await api.get('/sms-logs',{
+            params: status ? { status } : {},
+        })
+        return data
     }
 
 }

@@ -1,4 +1,4 @@
-import { subscriptionService } from "@/src/services/subscriptionService";
+import { subscriptionService } from "@/services/subscriptionService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useCurrentSubscription() {

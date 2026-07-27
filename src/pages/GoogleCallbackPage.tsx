@@ -2,9 +2,9 @@
 import { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { tokenStorage } from "@/src/lib/tokenStorage";
-import { userService } from "@/src/services/userService";
-import { AuthResponse, LoginTwoFactorPendingResponse } from "@/src/type/user";
+import { tokenStorage } from "@/lib/tokenStorage";
+import { userService } from "@/services/userService";
+import { AuthResponse, LoginTwoFactorPendingResponse } from "@/type/user";
 import { Icon } from "@iconify/react";
 
 function isTwoFactorPending(
