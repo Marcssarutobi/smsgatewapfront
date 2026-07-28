@@ -1,4 +1,3 @@
-import { get } from 'http';
 import { MessageResponse } from '../type/common'
 import { AuthResponse, LoginPayload, LoginTwoFactorPendingResponse, RegisterPayload, User } from '../type/user'
 import {api, webApi} from './api'

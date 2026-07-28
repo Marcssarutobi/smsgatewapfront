@@ -19,7 +19,7 @@ export const smsMessageService = {
             .then((r) => r.data),
 
     list: (apiKey: string,status?: SmsStatus)=>{
-        api.get<SmsMessage>('/v1/sms', {
+        return api.get<SmsMessage>('/v1/sms', {
             headers: { Authorization: `Bearer ${apiKey}` },
             params: { status },
         })

@@ -206,7 +206,7 @@ export function AdminSmsLogsPage() {
 
           {/* Pagination Controls */}
           <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100 text-xs text-slate-500">
-            <span>Affichage de 1 à {filteredLogs.length} sur {MOCK_SMS_LOGS.length} entrées</span>
+            <span>Affichage de {filteredLogs.length} sur {smsLogs.length} entrées</span>
             <div className="flex items-center gap-1">
               <Button variant="outline" size="sm" disabled className="h-8 w-8 p-0">
                 <ChevronLeft className="h-4 w-4" />
