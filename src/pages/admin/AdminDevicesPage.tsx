@@ -14,15 +14,30 @@ import {
   Copy,
   Check,
   ShieldAlert,
-  Sliders
+  Sliders,
+  Edit2, 
+  Trash2
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
+import { Input } from '../../components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../../components/ui/alert-dialog';
 import { QRCodeSVG } from 'qrcode.react';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../../components/ui/dialog';
-import { useAllDevice, useGeneratePairingCode } from '@/hook/features/useDevice';
+import { useAllDevice, useGeneratePairingCode, useRenameDevice, useDeleteDevice } from '@/hook/features/useDevice';
+import type { Device } from '@/type/device';
+import { useCurrentSubscription } from '@/hook/features/useSubscribe';
 
 
 export function AdminDevicesPage() {
@@ -30,6 +45,14 @@ export function AdminDevicesPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
+
+  const { mutate: renameDevice, isPending: isRenaming } = useRenameDevice();
+  const { mutate: deleteDevice, isPending: isDeleting } = useDeleteDevice();
+  const {data: current} = useCurrentSubscription()
+
+  const [deviceToRename, setDeviceToRename] = useState<Device | null>(null);
+  const [newName, setNewName] = useState('');
+  const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null);
 
   const {
     mutate: generatePairingCode,
@@ -77,6 +100,24 @@ export function AdminDevicesPage() {
         setSecondsLeft(data.expires_in);
       },
     });
+  };
+
+  const handleOpenRename = (device: Device) => {
+    setDeviceToRename(device);
+    setNewName(device.name);
+  };
+
+  const handleConfirmRename = () => {
+    if (!deviceToRename || !newName.trim()) return;
+    renameDevice(
+      { id: deviceToRename.id, name: newName.trim() },
+      { onSuccess: () => setDeviceToRename(null) }
+    );
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deviceToDelete) return;
+    deleteDevice(deviceToDelete.id, { onSuccess: () => setDeviceToDelete(null) });
   };
 
   const isExpired = pairingData && secondsLeft <= 0;
@@ -224,7 +265,7 @@ export function AdminDevicesPage() {
                             style={{
                               width: `${
                                 smsLimitDaily > 0
-                                  ? Math.min(100, (smsSentToday / smsLimitDaily) * 100)
+                                  ? Math.min(100, (smsSentToday / Number(current?.plan?.sms_quota_monthly)) * 100)
                                   : 0
                               }%`,
                             }}
@@ -236,9 +277,24 @@ export function AdminDevicesPage() {
                     <TableCell className="text-xs text-slate-500">{formatLastSeen(dev.last_seen_at)}</TableCell>
 
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4 text-slate-500" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleOpenRename(dev)}
+                        >
+                          <Edit2 className="h-4 w-4 text-slate-500" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                          onClick={() => setDeviceToDelete(dev)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
@@ -343,6 +399,50 @@ export function AdminDevicesPage() {
           <Button onClick={() => setIsAddModalOpen(false)}>J'ai scanné le QR Code</Button>
         </DialogFooter>
       </Dialog>
+
+      {/* Modal renommer */}
+      <Dialog open={!!deviceToRename} onOpenChange={(open) => !open && setDeviceToRename(null)}>
+        <DialogClose onClick={() => setDeviceToRename(null)} />
+        <DialogHeader>
+          <DialogTitle>Renommer le téléphone</DialogTitle>
+          <DialogDescription className="text-xs">
+            Donne un nom clair pour retrouver facilement cet appareil.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="my-4">
+          <Input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Ex: Téléphone Bureau"
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setDeviceToRename(null)}>
+            Annuler
+          </Button>
+          <Button onClick={handleConfirmRename} disabled={isRenaming || !newName.trim()}>
+            {isRenaming ? 'Enregistrement...' : 'Renommer'}
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
+      {/* Confirmation suppression */}
+      <AlertDialog open={!!deviceToDelete} onOpenChange={(open) => !open && setDeviceToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce téléphone ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              « {deviceToDelete?.name} » sera définitivement déconnecté. Il devra être réappairé (nouveau scan QR) pour être réutilisé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} disabled={isDeleting}>
+              {isDeleting ? 'Suppression...' : 'Supprimer'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

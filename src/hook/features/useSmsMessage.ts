@@ -26,9 +26,10 @@ export function useSmsList(apiKey: string, status?: SmsStatus) {
     });
 }
 
-export function useSmsHistory(status?: string){
+export function useSmsHistory(status?: string,options?: { refetchInterval?: number }){
   return useQuery({
     queryKey: ['sms-logs', status],
-    queryFn: ()=> smsMessageService.getHistory(status)
+    queryFn: ()=> smsMessageService.getHistory(status),
+    refetchInterval: options?.refetchInterval,
   })
 }

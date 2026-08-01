@@ -24,6 +24,7 @@ import { AdminWebhooksPage } from './pages/admin/AdminWebhooksPage';
 import { AdminOrganisationPage } from './pages/admin/AdminOrganisationPage';
 import { AdminSubscriptionPage } from './pages/admin/AdminSubscriptionPage';
 import ProtectedRoute from './router/ProtectedRoute';
+import { AdminSendTestSmsPage } from './pages/admin/AdminSendTestSmsPage';
 
 export default function App() {
   return (
@@ -112,6 +113,14 @@ export default function App() {
                 <AdminDevicesPage />
               </AdminLayout>
             }
+          />
+          <Route 
+            path="/admin/send-test" 
+            element={
+              <AdminLayout>
+                <AdminSendTestSmsPage />
+              </AdminLayout>
+            } 
           />
           <Route
             path="/admin/sms-logs"

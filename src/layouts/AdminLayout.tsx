@@ -15,7 +15,8 @@ import {
   Search,
   ExternalLink,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Send
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -37,6 +38,7 @@ import { useLogout, useMe } from '../hook/features/useUser';
 const NAV_ITEMS = [
   { path: '/admin', label: 'Vue d’ensemble', icon: LayoutDashboard },
   { path: '/admin/devices', label: 'Téléphones (Devices)', icon: Smartphone, badge: '4' },
+  { path: '/admin/send-test', label: 'Envoyer un test', icon: Send },
   { path: '/admin/sms-logs', label: 'Historique SMS', icon: MessageSquare },
   { path: '/admin/api-keys', label: 'Clés API', icon: KeyRound },
   { path: '/admin/webhooks', label: 'Webhooks', icon: WebhookIcon },

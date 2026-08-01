@@ -26,7 +26,8 @@ export function AdminSmsLogsPage() {
   const [exportMessage, setExportMessage] = useState<string | null>(null);
 
   const { data: smsLogs = [], isLoading } = useSmsHistory(
-    selectedStatus === 'all' ? undefined : selectedStatus
+    selectedStatus === 'all' ? undefined : selectedStatus,
+    { refetchInterval: 5000 }
   );
 
   const filteredLogs = smsLogs.filter((log) => {
@@ -50,8 +51,9 @@ export function AdminSmsLogsPage() {
       case 'sent':
         return <Badge variant="default">Envoyé</Badge>;
       case 'queued':
+        return <Badge variant="warning">En file d'attente (device)</Badge>;
       case 'pending':
-        return <Badge variant="warning">En attente</Badge>;
+        return <Badge variant="secondary">En attente d'un appareil</Badge>;
       case 'failed':
         return <Badge variant="destructive">Échec</Badge>;
       default:
