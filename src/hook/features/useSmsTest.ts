@@ -6,3 +6,9 @@ export function useSendTestSms() {
     mutationFn: smsTestService.send,
   });
 }
+
+export function useSendBulkTestSms() {
+  return useMutation({
+    mutationFn: smsTestService.sendBulk,
+  });
+}

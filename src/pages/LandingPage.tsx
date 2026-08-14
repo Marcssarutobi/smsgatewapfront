@@ -24,10 +24,23 @@ import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../components/ui/accordion';
-import { MOCK_PLANS, MOCK_FAQS } from '../data/mockData';
+import { MOCK_FAQS } from '../data/mockData';
+import { usePlans } from '@/hook/features/usePlan';
+
+// Formate un prix XOF (chaîne décimale côté back, ex "5000.00") en "5 000 FCFA".
+function formatPrice(price: string, currency: string): string {
+  const amount = Math.round(parseFloat(price));
+  const formatted = new Intl.NumberFormat('fr-FR').format(amount);
+  return currency === 'XOF' ? `${formatted} FCFA` : `${formatted} ${currency}`;
+}
 
 export function LandingPage() {
-  const [isAnnual, setIsAnnual] = useState(true);
+  const { data: plans = [], isLoading: isLoadingPlans } = usePlans();
+  const activePlans = plans.filter((p) => p.active);
+  // À défaut d'un champ "populaire" côté back, on met en avant le plan du milieu
+  // (ni le moins cher ni le plus cher) une fois les plans triés par prix.
+  const sortedPlans = [...activePlans].sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+  const popularPlanId = sortedPlans[Math.floor(sortedPlans.length / 2)]?.id;
 
   return (
     <div className="space-y-20 pb-16">
@@ -397,43 +410,42 @@ export function LandingPage() {
           </h2>
           <p className="text-slate-600 text-base">
             Aucuns frais cachés par SMS. Choisissez le nombre de téléphones connectés et le volume souhaité.
+            Facturation mensuelle, sans engagement — changez ou annulez à tout moment.
           </p>
-
-          {/* Monthly / Yearly Toggle */}
-          <div className="pt-4 flex items-center justify-center gap-3 text-sm font-medium">
-            <span className={!isAnnual ? 'text-slate-900 font-bold' : 'text-slate-500'}>Paiement Mensuel</span>
-            <button
-              onClick={() => setIsAnnual(!isAnnual)}
-              className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-indigo-600 transition-colors duration-200 ease-in-out focus:outline-none"
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  isAnnual ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-            <span className={isAnnual ? 'text-slate-900 font-bold flex items-center gap-1.5' : 'text-slate-500'}>
-              Paiement Annuel
-              <Badge variant="success" className="text-[10px]">
-                -20% Réduction
-              </Badge>
-            </span>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-          {MOCK_PLANS.map((plan) => {
-            const price = isAnnual ? plan.priceYearly : plan.priceMonthly;
+          {isLoadingPlans && (
+            <p className="col-span-3 text-center text-sm text-slate-400">Chargement des offres...</p>
+          )}
+
+          {!isLoadingPlans && activePlans.length === 0 && (
+            <p className="col-span-3 text-center text-sm text-slate-400">
+              Aucune offre disponible pour le moment.
+            </p>
+          )}
+
+          {sortedPlans.map((plan) => {
+            const isPopular = plan.id === popularPlanId;
+            // Certains plans (ex: Trial) n'ont pas de liste `features` en base :
+            // on reconstruit une liste minimale à partir des champs bruts du plan.
+            const features = plan.features?.length ? plan.features : [
+              `${plan.sms_quota_monthly.toLocaleString('fr-FR')} SMS / mois inclus`,
+              `Jusqu'à ${plan.max_devices} téléphone${plan.max_devices > 1 ? 's' : ''} Android connecté${plan.max_devices > 1 ? 's' : ''}`,
+              'API REST complète v1',
+              'Support des cartes Dual-SIM',
+            ];
+
             return (
               <div
                 key={plan.id}
                 className={`relative flex flex-col rounded-2xl border bg-white p-8 shadow-sm transition-all ${
-                  plan.isPopular
+                  isPopular
                     ? 'border-2 border-indigo-600 shadow-xl ring-1 ring-indigo-600/20'
                     : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
-                {plan.isPopular && (
+                {isPopular && (
                   <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-indigo-600 px-4 py-1 text-xs font-bold text-white shadow-sm uppercase tracking-wider">
                     Le Plus Populaire
                   </div>
@@ -441,20 +453,27 @@ export function LandingPage() {
 
                 <div className="space-y-2 mb-6">
                   <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
-                  <p className="text-xs text-slate-500 min-h-[32px]">{plan.tagline}</p>
+                  <p className="text-xs text-slate-500 min-h-[32px]">
+                    {parseFloat(plan.price) === 0
+                      ? "Idéal pour tester votre passerelle avant de vous engager."
+                      : `Jusqu'à ${plan.max_devices} téléphone${plan.max_devices > 1 ? 's' : ''} connecté${plan.max_devices > 1 ? 's' : ''}.`}
+                  </p>
                 </div>
 
                 <div className="mb-6 flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold tracking-tight text-slate-900">{price} €</span>
-                  <span className="text-sm font-semibold text-slate-500">/ mois</span>
-                  {isAnnual && <span className="text-[11px] text-slate-400 block ml-1">(facturé annuellement)</span>}
+                  <span className="text-4xl font-extrabold tracking-tight text-slate-900">
+                    {parseFloat(plan.price) === 0 ? 'Gratuit' : formatPrice(plan.price, plan.currency)}
+                  </span>
+                  {parseFloat(plan.price) > 0 && (
+                    <span className="text-sm font-semibold text-slate-500">/ mois</span>
+                  )}
                 </div>
 
                 <div className="space-y-3 mb-8 flex-1">
                   <div className="text-xs font-bold uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-100">
                     Ce qui est inclus :
                   </div>
-                  {plan.features.map((feature, idx) => (
+                  {features.map((feature, idx) => (
                     <div key={idx} className="flex items-start gap-2.5 text-sm text-slate-700">
                       <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
                       <span>{feature}</span>
@@ -464,7 +483,7 @@ export function LandingPage() {
 
                 <Link to="/register" className="mt-auto">
                   <Button
-                    variant={plan.isPopular ? 'default' : 'outline'}
+                    variant={isPopular ? 'default' : 'outline'}
                     className="w-full font-semibold py-2.5"
                   >
                     Choisir la formule {plan.name}

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
   KeyRound,
-  Plus,
+  RefreshCw,
+  AlertTriangle,
   Copy,
   Check,
   Eye,
@@ -38,10 +39,6 @@ export function AdminApiKeysPage() {
   const [newKeyName, setNewKeyName] = useState('');
   const [createdKeys, setCreatedKeys] = useState<CreatedKey[] | null>(null);
 
-  // Dérive l'environnement depuis le préfixe de la clé (fiable même si
-  // la colonne `environment` en base n'a pas encore été corrigée côté backend)
-  const getEnvironment = (key: string) => (key.startsWith('sk_live_') ? 'live' : 'test');
-
   const maskKey = (key: string) => `${key.slice(0, 12)}••••••••••••${key.slice(-4)}`;
 
   const handleCopy = (id: number | string, text: string) => {
@@ -73,17 +70,18 @@ export function AdminApiKeysPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Gestion des Clés API</h2>
+          <h2 className="text-xl font-bold text-slate-900">Clé API</h2>
           <p className="text-xs text-slate-500">
-            Créez et gérez les clés d'accès nécessaires pour authentifier vos requêtes HTTP REST.
+            Une paire de clés (test + production) est générée automatiquement à la création de ton compte.
+            Régénère-les uniquement si l'une d'elles a fuité : les anciennes cessent immédiatement de fonctionner.
           </p>
         </div>
         <Button
           onClick={() => { setCreatedKeys(null); setNewKeyName(''); setIsCreateModalOpen(true); }}
           className="font-semibold gap-2 shadow-sm"
         >
-          <Plus className="h-4 w-4" />
-          Générer une clé API
+          <RefreshCw className="h-4 w-4" />
+          {keys.length > 0 ? 'Régénérer mes clés API' : 'Générer mes clés API'}
         </Button>
       </div>
 
@@ -136,11 +134,11 @@ export function AdminApiKeysPage() {
 
                   <TableCell>
                     <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                      getEnvironment(k.key) === 'live'
+                      k.environment === 'live'
                         ? 'bg-indigo-100 text-indigo-700'
                         : 'bg-slate-100 text-slate-600'
                     }`}>
-                      {getEnvironment(k.key)}
+                      {k.environment}
                     </span>
                   </TableCell>
 
@@ -222,7 +220,7 @@ export function AdminApiKeysPage() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-indigo-600" />
-            Créer une nouvelle clé API
+            {keys.length > 0 ? 'Régénérer mes clés API' : 'Générer mes clés API'}
           </DialogTitle>
           <DialogDescription className="text-xs">
             Une clé de <strong>test</strong> et une clé de <strong>production</strong> seront générées ensemble.
@@ -231,6 +229,16 @@ export function AdminApiKeysPage() {
 
         {!createdKeys ? (
           <form onSubmit={handleCreateKey} className="space-y-4 my-4">
+            {keys.length > 0 && (
+              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-800">
+                  Tes clés actuelles seront immédiatement invalidées. Toute intégration qui les
+                  utilise encore cessera de fonctionner tant que tu ne l'auras pas mise à jour.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700">Nom / Utilisation de la clé</label>
               <Input
@@ -246,7 +254,7 @@ export function AdminApiKeysPage() {
                 Annuler
               </Button>
               <Button type="submit" className="font-semibold" disabled={isCreating}>
-                {isCreating ? 'Génération...' : 'Générer les clés'}
+                {isCreating ? 'Génération...' : keys.length > 0 ? 'Régénérer les clés' : 'Générer les clés'}
               </Button>
             </DialogFooter>
           </form>
@@ -264,7 +272,7 @@ export function AdminApiKeysPage() {
               {createdKeys.map((k) => (
                 <div key={k.id} className="space-y-1">
                   <span className="text-[10px] font-semibold text-emerald-700 uppercase">
-                    {getEnvironment(k.key)} — {k.name}
+                    {k.environment} — {k.name}
                   </span>
                   <div className="flex items-center gap-2">
                     <code className="bg-white p-2.5 rounded border border-emerald-300 font-mono text-xs font-bold text-slate-900 flex-1 break-all select-all">
