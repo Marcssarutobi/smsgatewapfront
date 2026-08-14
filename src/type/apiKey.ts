@@ -13,3 +13,9 @@ export interface ApiKey {
   created_at: string;
   updated_at: string;
 }
+
+// Réponse de POST /api-keys : le backend génère toujours une paire test + live d'un coup
+export interface CreateApiKeyResponse {
+  message: string;
+  keys: ApiKey[];
+}

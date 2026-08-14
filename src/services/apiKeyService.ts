@@ -1,5 +1,5 @@
 import { MessageResponse } from "../type/common";
-import { ApiKey } from "../types";
+import { ApiKey, CreateApiKeyResponse } from "../type/apiKey";
 import { api } from "./api";
 
 export const apiKeyService = {
@@ -8,7 +8,8 @@ export const apiKeyService = {
         return data
     },
 
-    createApiKey: async (name?: string):Promise<ApiKey>=>{
+    // Le backend génère toujours une paire de clés (test + live) en une seule requête.
+    createApiKey: async (name?: string):Promise<CreateApiKeyResponse>=>{
         const {data} = await api.post('/api-keys',{name})
         return data
     },

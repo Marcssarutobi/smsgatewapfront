@@ -1,6 +1,5 @@
 import { MessageResponse } from "../type/common";
-import { CreateWebhookPayload } from "../type/webHook";
-import { Webhook } from "../types";
+import { CreateWebhookPayload, Webhook } from "../type/webHook";
 import { api } from "./api";
 
 export const webhookService =  {

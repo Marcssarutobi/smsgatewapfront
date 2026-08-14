@@ -1,4 +1,4 @@
-import React, { use, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -187,7 +187,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </button>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-slate-900">{activeItem.label}</h1>
-              <span className="hidden sm:inline-block text-xs text-slate-400">/ {use?.organisation?.name} </span>
+              <span className="hidden sm:inline-block text-xs text-slate-400">/ {user?.organisation?.name} </span>
             </div>
           </div>
 
@@ -227,7 +227,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                   </div>
                   <div className="hidden sm:flex flex-col text-left">
                     <span className="text-xs font-bold text-slate-800 leading-tight"> {user?.name} </span>
-                    <span className="text-[10px] text-slate-500"> Plan {user?.active_subscription?.plan?.name} </span>
+                    <span className="text-[10px] text-slate-500"> Plan {user?.activeSubscription?.plan?.name} </span>
                   </div>
                 </div>
               </DropdownMenuTrigger>

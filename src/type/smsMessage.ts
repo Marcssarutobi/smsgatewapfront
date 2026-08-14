@@ -1,4 +1,6 @@
 import type { SmsStatusLog } from './smsStatusLog';
+import type { Device } from './device';
+import type { DeviceSim } from './deviceSim';
 
 export type SmsStatus = 'pending' | 'queued' | 'sent' | 'delivered' | 'failed';
 
@@ -19,6 +21,9 @@ export interface SmsMessage {
   updated_at: string;
 
   statusLogs?: SmsStatusLog[]; // si relation chargée
+  // Relation chargée par indexForUser()/showForUser() : ->with('deviceSim.device').
+  // Laravel snake-case le nom de la relation en JSON -> "device_sim".
+  device_sim?: (DeviceSim & { device?: Device }) | null;
 }
 
 // Payload d'envoi (POST /v1/sms/send, auth par clé API)

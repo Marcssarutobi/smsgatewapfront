@@ -16,8 +16,6 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
-import { MOCK_SMS_LOGS } from '../../data/mockData';
-import { SmsLog } from '../../types';
 import { useSmsHistory } from '@/hook/features/useSmsMessage';
 
 export function AdminSmsLogsPage() {

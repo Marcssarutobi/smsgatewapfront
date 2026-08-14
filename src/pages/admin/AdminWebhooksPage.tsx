@@ -12,9 +12,10 @@ import { Badge } from '../../components/ui/badge';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../../components/ui/dialog';
 import { useCreateWebhook, useDeleteWebhook, useToggleWebhook, useWebhooks } from '@/hook/features/useWebhooks';
+import type { WebhookEvent } from '@/type/webHook';
 
 
-const AVAILABLE_EVENTS = ['sms.sent', 'sms.delivered', 'sms.failed'];
+const AVAILABLE_EVENTS: WebhookEvent[] = ['sms.sent', 'sms.delivered', 'sms.failed'];
 
 export function AdminWebhooksPage() {
   const { data: webhooks = [], isLoading } = useWebhooks();
@@ -24,7 +25,7 @@ export function AdminWebhooksPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newUrl, setNewUrl] = useState('');
-  const [selectedEvent, setSelectedEvent] = useState('sms.delivered');
+  const [selectedEvent, setSelectedEvent] = useState<WebhookEvent>('sms.delivered');
 
   const handleAddWebhook = (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,7 +180,7 @@ export function AdminWebhooksPage() {
             <label className="text-xs font-semibold text-slate-700">Événement à écouter</label>
             <select
               value={selectedEvent}
-              onChange={(e) => setSelectedEvent(e.target.value)}
+              onChange={(e) => setSelectedEvent(e.target.value as WebhookEvent)}
               className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 text-xs font-mono text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             >
               {AVAILABLE_EVENTS.map((ev) => (
