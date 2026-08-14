@@ -6,16 +6,17 @@ import { Badge } from '../../components/ui/badge';
 import { Progress } from '../../components/ui/progress';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../../components/ui/dialog';
 import { usePlans } from '@/hook/features/usePlan';
-import { useCreateSubscribe, useCurrentSubscription } from '@/hook/features/useSubscribe';
+import { useCheckoutSubscribe, useCurrentSubscription } from '@/hook/features/useSubscribe';
 
 export function AdminSubscriptionPage() {
   const { data: subscription, isLoading: isLoadingSub } = useCurrentSubscription();
   const { data: plans = [], isLoading: isLoadingPlans } = usePlans();
-  const { mutate: subscribe, isPending: isSubscribing } = useCreateSubscribe();
+  const { mutate: checkout, isPending: isSubscribing } = useCheckoutSubscribe();
 
   const [isChangeModalOpen, setIsChangeModalOpen] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const currentPlan = subscription?.plan;
   const usedSms = subscription?.sms_used ?? 0;
@@ -25,19 +26,37 @@ export function AdminSubscriptionPage() {
 
   const handleOpenChangeModal = () => {
     setSelectedPlanId(currentPlan?.id ?? plans[0]?.id ?? null);
+    setCheckoutError(null);
     setIsChangeModalOpen(true);
   };
 
   const handlePlanChange = () => {
     if (!selectedPlanId) return;
+    setCheckoutError(null);
 
-    subscribe(
+    checkout(
       { plan_id: selectedPlanId },
       {
         onSuccess: (data) => {
-          setSuccessMessage(`Votre abonnement a été mis à jour vers le plan ${data.plan.name} !`);
-          setTimeout(() => setSuccessMessage(null), 4000);
-          setIsChangeModalOpen(false);
+          if (data.free && data.subscription) {
+            // Plan gratuit : déjà activé côté back, rien à payer.
+            setSuccessMessage(`Votre abonnement a été mis à jour vers le plan ${data.subscription.plan?.name} !`);
+            setTimeout(() => setSuccessMessage(null), 4000);
+            setIsChangeModalOpen(false);
+            return;
+          }
+
+          if (data.checkout_url) {
+            // Plan payant : redirection vers la page de paiement sécurisée FedaPay.
+            // Le retour se fait sur /admin/subscription/callback, qui attend la
+            // confirmation du webhook avant d'activer réellement l'abonnement.
+            window.location.href = data.checkout_url;
+          }
+        },
+        onError: (error: any) => {
+          setCheckoutError(
+            error?.response?.data?.message ?? "Impossible de démarrer le paiement pour le moment."
+          );
         },
       }
     );
@@ -178,11 +197,18 @@ export function AdminSubscriptionPage() {
             Changer de Formule d'Abonnement
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Sélectionnez le plan correspondant le mieux à vos volumes d'envoi.
+            Sélectionnez le plan correspondant le mieux à vos volumes d'envoi. Les plans payants
+            sont réglés en toute sécurité via FedaPay (Mobile Money, carte bancaire...).
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 my-4">
+          {checkoutError && (
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs font-semibold text-red-700">
+              {checkoutError}
+            </div>
+          )}
+
           {isLoadingPlans && <p className="text-xs text-slate-500">Chargement des plans...</p>}
 
           {!isLoadingPlans && plans.map((plan) => (
@@ -225,7 +251,11 @@ export function AdminSubscriptionPage() {
             Annuler
           </Button>
           <Button onClick={handlePlanChange} className="font-semibold" disabled={isSubscribing || !selectedPlanId}>
-            {isSubscribing ? 'Changement en cours...' : 'Confirmer le changement de plan'}
+            {isSubscribing
+              ? 'Redirection vers le paiement...'
+              : selectedPlanId && plans.find((p) => p.id === selectedPlanId)?.price !== '0.00'
+                ? 'Payer avec FedaPay'
+                : 'Confirmer le changement de plan'}
           </Button>
         </DialogFooter>
       </Dialog>

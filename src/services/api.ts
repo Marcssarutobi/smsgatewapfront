@@ -1,12 +1,17 @@
 import axios from 'axios';
 import { tokenStorage } from '../lib/tokenStorage';
 
+// Variables d'environnement Vite (voir .env.example) — avec repli sur le dev local
+// si le fichier .env n'a pas été créé.
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api';
+const WEB_URL = import.meta.env.VITE_WEB_URL ?? 'http://localhost:8000';
+
 export const api = axios.create({
-  baseURL:'http://localhost:8000/api',
+  baseURL: API_URL,
 });
 
 export const webApi = axios.create({
-  baseURL: 'http://localhost:8000', // sans /api
+  baseURL: WEB_URL, // sans /api
 });
 
 // Injecte le token Bearer (Sanctum) sur chaque requête.

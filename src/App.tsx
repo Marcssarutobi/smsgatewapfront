@@ -23,6 +23,7 @@ import { AdminApiKeysPage } from './pages/admin/AdminApiKeysPage';
 import { AdminWebhooksPage } from './pages/admin/AdminWebhooksPage';
 import { AdminOrganisationPage } from './pages/admin/AdminOrganisationPage';
 import { AdminSubscriptionPage } from './pages/admin/AdminSubscriptionPage';
+import { SubscriptionCallbackPage } from './pages/admin/SubscriptionCallbackPage';
 import ProtectedRoute from './router/ProtectedRoute';
 import { AdminSendTestSmsPage } from './pages/admin/AdminSendTestSmsPage';
 
@@ -159,6 +160,14 @@ export default function App() {
             element={
               <AdminLayout>
                 <AdminSubscriptionPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/subscription/callback"
+            element={
+              <AdminLayout>
+                <SubscriptionCallbackPage />
               </AdminLayout>
             }
           />
