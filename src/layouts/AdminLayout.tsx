@@ -34,27 +34,35 @@ import {
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { useLogout, useMe } from '../hook/features/useUser';
+import { useAllDevice } from '../hook/features/useDevice';
 
 const NAV_ITEMS = [
   { path: '/admin', label: 'Vue d’ensemble', icon: LayoutDashboard },
-  { path: '/admin/devices', label: 'Téléphones (Devices)', icon: Smartphone, badge: '4' },
+  { path: '/admin/devices', label: 'Téléphones (Devices)', icon: Smartphone },
   { path: '/admin/send-test', label: 'Envoyer un test', icon: Send },
   { path: '/admin/sms-logs', label: 'Historique SMS', icon: MessageSquare },
   { path: '/admin/api-keys', label: 'Clés API', icon: KeyRound },
   { path: '/admin/webhooks', label: 'Webhooks', icon: WebhookIcon },
   { path: '/admin/organisation', label: 'Organisation', icon: Building2 },
-  { path: '/admin/abonnement', label: 'Abonnement', icon: CreditCard, badge: 'Business' },
+  { path: '/admin/abonnement', label: 'Abonnement', icon: CreditCard },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const {data: user} = useMe()
+  const { data: devices } = useAllDevice();
   const { mutate: logout, isPending } = useLogout();
   const location = useLocation();
   const navigate = useNavigate();
 
   const activeItem = NAV_ITEMS.find((item) => item.path === location.pathname) || NAV_ITEMS[0];
+
+  // ✅ Chiffres réels de la passerelle (au lieu du "4/5" codé en dur)
+  const devicesTotal = devices?.length ?? 0;
+  const devicesOnline = devices?.filter((d) => d.status === 'online').length ?? 0;
+  const devicesOnlinePercent = devicesTotal > 0 ? Math.round((devicesOnline / devicesTotal) * 100) : 0;
+  const planName = user?.activeSubscription?.plan?.name ?? null;
 
   const handleLogout = ()=>{
     logout(undefined,{
@@ -104,13 +112,17 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <div className="p-4 mx-3 my-3 rounded-xl bg-slate-800/60 border border-slate-800">
             <div className="flex items-center justify-between text-xs mb-1.5">
               <span className="text-slate-400 font-medium">Passerelles actives</span>
-              <span className="inline-flex items-center gap-1 font-semibold text-emerald-400">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                4/5 En ligne
-              </span>
+              {devicesTotal > 0 ? (
+                <span className="inline-flex items-center gap-1 font-semibold text-emerald-400">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  {devicesOnline}/{devicesTotal} En ligne
+                </span>
+              ) : (
+                <span className="text-slate-500 font-medium">Aucun device</span>
+              )}
             </div>
             <div className="w-full bg-slate-700/60 rounded-full h-1.5">
-              <div className="bg-emerald-400 h-1.5 rounded-full" style={{ width: '80%' }} />
+              <div className="bg-emerald-400 h-1.5 rounded-full" style={{ width: `${devicesOnlinePercent}%` }} />
             </div>
           </div>
 
@@ -119,6 +131,15 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
+
+              // ✅ Badges calculés dynamiquement (au lieu de valeurs codées en dur)
+              let badge: string | null = null;
+              if (item.path === '/admin/devices' && devicesTotal > 0) {
+                badge = String(devicesTotal);
+              } else if (item.path === '/admin/abonnement' && planName) {
+                badge = planName;
+              }
+
               return (
                 <Link
                   key={item.path}
@@ -134,7 +155,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                     <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                     <span>{item.label}</span>
                   </div>
-                  {item.badge && (
+                  {badge && (
                     <span
                       className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                         isActive
@@ -142,7 +163,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                           : 'bg-slate-800 text-indigo-400 border border-slate-700'
                       }`}
                     >
-                      {item.badge}
+                      {badge}
                     </span>
                   )}
                 </Link>
