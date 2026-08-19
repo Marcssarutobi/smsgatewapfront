@@ -481,7 +481,7 @@ export function LandingPage() {
                   ))}
                 </div>
 
-                <Link to="/register" className="mt-auto">
+                <Link to={`/register?plan=${plan.id}`} className="mt-auto">
                   <Button
                     variant={isPopular ? 'default' : 'outline'}
                     className="w-full font-semibold py-2.5"
