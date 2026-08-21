@@ -93,8 +93,16 @@ export const userService = {
     },
 
     // À appeler avec le temp_token reçu au login (ability 2fa-pending)
-    verifyTwoFactor: async (code: string) =>{
-        const {data} = await api.post<AuthResponse>('/auth/2fa/verify', { code })
+    verifyTwoFactor: async (code: string, tempToken: string) =>{
+        // Le temp_token n'est PAS le token de session normal : on ne peut pas
+        // compter sur l'intercepteur global de `api` (qui lit tokenStorage,
+        // vide à ce stade puisque la connexion n'est pas encore finalisée).
+        // On le passe donc explicitement en en-tête pour cet appel précis.
+        const {data} = await api.post<AuthResponse>(
+            '/auth/2fa/verify',
+            { code },
+            { headers: { Authorization: `Bearer ${tempToken}` } }
+        )
         return data
     },
 

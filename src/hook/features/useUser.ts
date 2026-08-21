@@ -91,7 +91,10 @@ export function useResetPassword() {
 export function useVerifyTwoFactor() {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: userService.verifyTwoFactor,
+      // Le hook attend désormais { code, tempToken } au lieu d'une simple
+      // chaîne — voir userService.verifyTwoFactor pour le pourquoi.
+      mutationFn: ({ code, tempToken }: { code: string; tempToken: string }) =>
+        userService.verifyTwoFactor(code, tempToken),
       onSuccess: (data) => {
         tokenStorage.set(data.token)
         queryClient.invalidateQueries({ queryKey: ['me'] });

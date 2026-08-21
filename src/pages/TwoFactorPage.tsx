@@ -40,14 +40,17 @@ export function TwoFactorPage() {
       return;
     }
 
-    verify(fullCode, {
-      onSuccess: () => {
-        navigate('/admin');
-      },
-      onError: () => {
-        toast.error('Code invalide, réessayez.');
-      },
-    });
+    verify(
+      { code: fullCode, tempToken },
+      {
+        onSuccess: () => {
+          navigate('/admin');
+        },
+        onError: () => {
+          toast.error('Code invalide, réessayez.');
+        },
+      }
+    );
   };
 
   return (
