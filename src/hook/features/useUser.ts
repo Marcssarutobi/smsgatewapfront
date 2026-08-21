@@ -68,6 +68,26 @@ export function useConfirmTwoFactor() {
     });
 }
 
+export function useDisableTwoFactor() {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: userService.disableTwoFactor,
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'] }),
+    });
+}
+
+export function useResendVerificationEmail() {
+    return useMutation({ mutationFn: userService.resendVerificationEmail });
+}
+
+export function useForgotPassword() {
+    return useMutation({ mutationFn: userService.forgotPassword });
+}
+
+export function useResetPassword() {
+    return useMutation({ mutationFn: userService.resetPassword });
+}
+
 export function useVerifyTwoFactor() {
     const queryClient = useQueryClient();
     return useMutation({

@@ -16,7 +16,9 @@ import {
   ExternalLink,
   ChevronRight,
   Sparkles,
-  Send
+  Send,
+  Settings,
+  Mail
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -33,8 +35,9 @@ import {
 } from "../../components/ui/alert-dialog";
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
-import { useLogout, useMe } from '../hook/features/useUser';
+import { useLogout, useMe, useResendVerificationEmail } from '../hook/features/useUser';
 import { useAllDevice } from '../hook/features/useDevice';
+import toast from 'react-hot-toast';
 
 const NAV_ITEMS = [
   { path: '/admin', label: 'Vue d’ensemble', icon: LayoutDashboard },
@@ -45,6 +48,7 @@ const NAV_ITEMS = [
   { path: '/admin/webhooks', label: 'Webhooks', icon: WebhookIcon },
   { path: '/admin/organisation', label: 'Organisation', icon: Building2 },
   { path: '/admin/abonnement', label: 'Abonnement', icon: CreditCard },
+  { path: '/admin/settings', label: 'Paramètres', icon: Settings },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -281,6 +285,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
         {/* Dynamic Page Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl w-full mx-auto">
+          {user && !user.email_verified_at && <EmailVerificationBanner />}
           {children}
         </main>
       </div>
@@ -304,6 +309,38 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </AlertDialogContent>
       </AlertDialog>
 
+    </div>
+  );
+}
+
+// Bandeau discret rappelant de vérifier son email, affiché tant que
+// email_verified_at est null côté backend. Disparaît automatiquement après
+// vérification (react-query invalide 'me' au retour sur /admin).
+function EmailVerificationBanner() {
+  const { mutate: resend, isPending } = useResendVerificationEmail();
+
+  const handleResend = () => {
+    resend(undefined, {
+      onSuccess: () => toast.success('Email de vérification renvoyé, vérifiez votre boîte de réception.'),
+      onError: () => toast.error("Impossible d'envoyer l'email pour le moment."),
+    });
+  };
+
+  return (
+    <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <div className="flex items-center gap-2">
+        <Mail className="h-4 w-4 shrink-0" />
+        <span>Confirmez votre adresse email pour sécuriser votre compte.</span>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleResend}
+        disabled={isPending}
+        className="border-amber-300 text-amber-800 hover:bg-amber-100 shrink-0"
+      >
+        {isPending ? 'Envoi...' : "Renvoyer l'email"}
+      </Button>
     </div>
   );
 }

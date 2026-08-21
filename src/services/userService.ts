@@ -67,6 +67,26 @@ export const userService = {
         return data
     },
 
+    disableTwoFactor: async (password: string)=>{
+        const {data} = await api.post<MessageResponse>('/auth/2fa/disable', { password })
+        return data
+    },
+
+    resendVerificationEmail: async ()=>{
+        const {data} = await api.post<MessageResponse>('/auth/email/resend')
+        return data
+    },
+
+    forgotPassword: async (email: string)=>{
+        const {data} = await api.post<MessageResponse>('/auth/forgot-password', { email })
+        return data
+    },
+
+    resetPassword: async (payload: { token: string; email: string; password: string; password_confirmation: string })=>{
+        const {data} = await api.post<MessageResponse>('/auth/reset-password', payload)
+        return data
+    },
+
     allUsers: async():Promise<User[]>=>{
         const {data} = await api.get('/users')
         return data

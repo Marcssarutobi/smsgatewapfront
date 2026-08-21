@@ -13,6 +13,9 @@ import { ContactPage } from './pages/ContactPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { TwoFactorPage } from './pages/TwoFactorPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { EmailVerifiedPage } from './pages/EmailVerifiedPage';
 import { GoogleCallbackPage } from './pages/GoogleCallbackPage';
 
 // Admin Pages
@@ -23,6 +26,7 @@ import { AdminApiKeysPage } from './pages/admin/AdminApiKeysPage';
 import { AdminWebhooksPage } from './pages/admin/AdminWebhooksPage';
 import { AdminOrganisationPage } from './pages/admin/AdminOrganisationPage';
 import { AdminSubscriptionPage } from './pages/admin/AdminSubscriptionPage';
+import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { SubscriptionCallbackPage } from './pages/admin/SubscriptionCallbackPage';
 import ProtectedRoute from './router/ProtectedRoute';
 import { AdminSendTestSmsPage } from './pages/admin/AdminSendTestSmsPage';
@@ -85,6 +89,30 @@ export default function App() {
           element={
             <MainLayout>
               <TwoFactorPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <MainLayout>
+              <ForgotPasswordPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <MainLayout>
+              <ResetPasswordPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/email-verified"
+          element={
+            <MainLayout>
+              <EmailVerifiedPage />
             </MainLayout>
           }
         />
@@ -160,6 +188,14 @@ export default function App() {
             element={
               <AdminLayout>
                 <AdminSubscriptionPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <AdminLayout>
+                <AdminSettingsPage />
               </AdminLayout>
             }
           />
