@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { User as UserIcon, Lock, ShieldCheck, Save, CheckCircle2, Copy, ShieldOff } from 'lucide-react';
+import { User as UserIcon, Lock, ShieldCheck, Save, CheckCircle2, Copy, Check, ShieldOff } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
@@ -227,32 +228,66 @@ function TwoFactorTab() {
 function EnableTwoFactorCard() {
   const { mutate: setup, data: setupData, isPending: isSettingUp } = useSetupTwoFactor();
   const { mutate: confirm, isPending: isConfirming, data: confirmData } = useConfirmTwoFactor();
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [copiedSecret, setCopiedSecret] = useState(false);
+  const [copiedCodes, setCopiedCodes] = useState(false);
+  const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     setup();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const fullCode = code.join('');
+
+  const handleDigitChange = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const next = [...code];
+    next[index] = digit;
+    setCode(next);
+    if (digit && index < 5) inputRefs.current[index + 1]?.focus();
+  };
+
+  const handleDigitKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !code[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
   const handleConfirm = (e: React.FormEvent) => {
     e.preventDefault();
-    confirm(code, {
-      onError: () => toast.error('Code invalide, réessayez.'),
+    confirm(fullCode, {
+      onError: () => {
+        toast.error('Code invalide, réessayez.');
+        setCode(['', '', '', '', '', '']);
+        inputRefs.current[0]?.focus();
+      },
     });
+  };
+
+  const copySecret = () => {
+    if (!setupData) return;
+    navigator.clipboard.writeText(setupData.secret);
+    setCopiedSecret(true);
+    setTimeout(() => setCopiedSecret(false), 2000);
   };
 
   const copyRecoveryCodes = () => {
     if (!confirmData) return;
     navigator.clipboard.writeText(confirmData.recovery_codes.join('\n'));
+    setCopiedCodes(true);
     toast.success('Codes de récupération copiés');
+    setTimeout(() => setCopiedCodes(false), 2000);
   };
 
+  // Étape "codes de récupération" — même grammaire visuelle que la révélation
+  // de clés API fraîchement générées (bloc emerald, mono, select-all).
   if (confirmData) {
     return (
       <Card className="border-slate-200/80">
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2 text-green-600">
-            <CheckCircle2 className="h-5 w-5" /> 2FA activée
+          <CardTitle className="text-base flex items-center gap-2 text-emerald-700">
+            <ShieldCheck className="h-5 w-5" /> Double authentification activée
           </CardTitle>
           <CardDescription>
             Conservez ces codes de récupération dans un endroit sûr : ils permettent de vous reconnecter
@@ -260,15 +295,23 @@ function EnableTwoFactorCard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-2 font-mono text-sm bg-slate-50 border border-slate-200 rounded-lg p-4">
-            {confirmData.recovery_codes.map((c) => (
-              <span key={c}>{c}</span>
-            ))}
+          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-3">
+            <p className="font-bold flex items-center gap-1.5 text-emerald-800 text-xs">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              8 codes de récupération générés
+            </p>
+            <div className="grid grid-cols-2 gap-2 bg-white rounded-lg border border-emerald-300 p-3">
+              {confirmData.recovery_codes.map((c) => (
+                <code key={c} className="font-mono text-xs font-bold text-slate-900 select-all">
+                  {c}
+                </code>
+              ))}
+            </div>
           </div>
         </CardContent>
         <CardFooter className="justify-end border-t border-slate-100 pt-4">
-          <Button variant="outline" onClick={copyRecoveryCodes} className="font-semibold">
-            <Copy className="h-4 w-4 mr-1.5" /> Copier les codes
+          <Button onClick={copyRecoveryCodes} className="font-semibold">
+            <Copy className="h-4 w-4 mr-1.5" /> {copiedCodes ? 'Copiés !' : 'Copier les codes'}
           </Button>
         </CardFooter>
       </Card>
@@ -276,44 +319,97 @@ function EnableTwoFactorCard() {
   }
 
   return (
-    <Card className="border-slate-200/80">
+    <Card className="border-slate-200/80 overflow-hidden">
       <CardHeader>
         <CardTitle className="text-base">Activer la double authentification</CardTitle>
-        <CardDescription>
-          Scannez ce QR code avec Google Authenticator, Authy ou une app compatible TOTP, puis entrez le code généré.
-        </CardDescription>
+        <CardDescription>Deux étapes rapides pour sécuriser votre compte.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {isSettingUp && <p className="text-sm text-slate-500">Génération du QR code...</p>}
-        {setupData && (
-          <div className="flex flex-col items-center gap-3">
-            <div
-              className="w-44 h-44 border border-slate-200 rounded-lg p-2 bg-white"
-              dangerouslySetInnerHTML={{ __html: setupData.qr_code_svg }}
-            />
-            <p className="text-xs text-slate-500">
-              Le QR code ne scanne pas ? Entrez ce code manuellement :{' '}
-              <span className="font-mono font-semibold text-slate-700">{setupData.secret}</span>
-            </p>
+
+      {/* Stepper — même grammaire numérotée que le pairing d'un device (badges
+          ronds indigo reliés par une ligne), pour rester cohérent avec le reste
+          de l'app plutôt que d'inventer un nouveau langage visuel. */}
+      <div className="flex items-center px-6 pb-2">
+        <div className="flex items-center gap-2">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-bold text-white">
+            1
+          </span>
+          <span className="text-xs font-semibold text-slate-700">Scanner</span>
+        </div>
+        <div className={`mx-3 h-px flex-1 ${fullCode.length === 6 ? 'bg-indigo-300' : 'bg-slate-200'}`} />
+        <div className="flex items-center gap-2">
+          <span
+            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+              setupData ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-400'
+            }`}
+          >
+            2
+          </span>
+          <span className={`text-xs font-semibold ${setupData ? 'text-slate-700' : 'text-slate-400'}`}>
+            Confirmer
+          </span>
+        </div>
+      </div>
+
+      <CardContent className="space-y-5">
+        {isSettingUp && (
+          <div className="flex flex-col items-center justify-center gap-2 py-8 text-slate-400">
+            <div className="h-44 w-44 rounded-2xl bg-slate-50 border border-slate-200 animate-pulse" />
+            <p className="text-xs">Génération du QR code...</p>
           </div>
         )}
 
-        <form onSubmit={handleConfirm} className="flex items-end gap-2 max-w-xs mx-auto">
-          <div className="flex-1 space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700">Code à 6 chiffres</label>
-            <Input
-              inputMode="numeric"
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="123456"
-              required
-            />
-          </div>
-          <Button type="submit" disabled={isConfirming || !setupData} className="font-semibold">
-            {isConfirming ? 'Vérification...' : 'Activer'}
-          </Button>
-        </form>
+        {setupData && (
+          <>
+            {/* QR box — même traitement que le modal de pairing device (fond
+                slate-50, carte blanche arrondie avec ombre légère autour du QR). */}
+            <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-50 border border-slate-200">
+              <div className="h-44 w-44 bg-white p-3 rounded-xl border border-slate-300 shadow-sm flex items-center justify-center">
+                <div
+                  className="h-full w-full [&_svg]:h-full [&_svg]:w-full"
+                  dangerouslySetInnerHTML={{ __html: setupData.qr_code_svg }}
+                />
+              </div>
+              <p className="mt-3 text-[10px] text-slate-400">
+                Scannez avec Google Authenticator, Authy ou une app compatible TOTP
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-xs text-slate-500 font-medium">Ou entrez ce code manuellement :</span>
+                <code className="bg-slate-200 px-2 py-1 rounded text-xs font-mono font-bold text-slate-800">
+                  {setupData.secret}
+                </code>
+                <button
+                  type="button"
+                  onClick={copySecret}
+                  className="text-slate-500 hover:text-indigo-600 p-1 rounded cursor-pointer"
+                >
+                  {copiedSecret ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Code à 6 chiffres — mêmes cases individuelles que l'écran de
+                connexion 2FA, pour unifier la saisie de code dans toute l'app. */}
+            <form onSubmit={handleConfirm} className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2">
+                {code.map((digit, i) => (
+                  <input
+                    key={i}
+                    ref={(el) => { inputRefs.current[i] = el; }}
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleDigitChange(i, e.target.value)}
+                    onKeyDown={(e) => handleDigitKeyDown(i, e)}
+                    className="h-12 w-10 rounded-lg border border-slate-300 text-center text-lg font-bold text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-colors"
+                  />
+                ))}
+              </div>
+              <Button type="submit" disabled={isConfirming || fullCode.length !== 6} className="font-semibold w-full max-w-xs">
+                {isConfirming ? 'Vérification...' : 'Activer la 2FA'}
+              </Button>
+            </form>
+          </>
+        )}
       </CardContent>
     </Card>
   );
@@ -337,15 +433,28 @@ function DisableTwoFactorCard() {
   };
 
   return (
-    <Card className="border-slate-200/80">
+    <Card className="border-slate-200/80 overflow-hidden">
+      {/* Bandeau de statut — même ton que la bannière de bienvenue du dashboard
+          (fond sombre dégradé), pour signaler visuellement que c'est un état
+          "protégé" plutôt qu'un simple formulaire. */}
+      <div className="flex items-center gap-3 bg-gradient-to-r from-slate-900 to-emerald-950 px-6 py-5 text-white">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20">
+          <ShieldCheck className="h-5 w-5 text-emerald-400" />
+        </div>
+        <div>
+          <p className="text-sm font-bold">Double authentification activée</p>
+          <p className="text-xs text-slate-300">Un code à 6 chiffres est demandé à chaque connexion.</p>
+        </div>
+        <Badge variant="success" className="ml-auto shrink-0">Protégé</Badge>
+      </div>
+
       <form onSubmit={handleSubmit}>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2 text-green-600">
-            <ShieldCheck className="h-5 w-5" /> Double authentification activée
+          <CardTitle className="text-sm flex items-center gap-1.5 text-slate-700">
+            <ShieldOff className="h-4 w-4" /> Désactiver la protection
           </CardTitle>
           <CardDescription>
-            Votre compte est protégé par un code à 6 chiffres à chaque connexion. Confirmez votre mot de
-            passe pour désactiver cette protection.
+            Confirmez votre mot de passe pour désactiver la 2FA. Vos codes de récupération actuels seront invalidés.
           </CardDescription>
         </CardHeader>
         <CardContent>

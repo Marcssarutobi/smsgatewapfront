@@ -29,7 +29,9 @@ import { AdminSubscriptionPage } from './pages/admin/AdminSubscriptionPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { SubscriptionCallbackPage } from './pages/admin/SubscriptionCallbackPage';
 import ProtectedRoute from './router/ProtectedRoute';
+import AdminOnlyRoute from './router/AdminOnlyRoute';
 import { AdminSendTestSmsPage } from './pages/admin/AdminSendTestSmsPage';
+import { PlatformAdminPage } from './pages/admin/PlatformAdminPage';
 
 export default function App() {
   return (
@@ -208,6 +210,22 @@ export default function App() {
             }
           />
         </Route>
+
+        {/* Panneau super-admin : réservé au staff plateforme (role 'Admin'),
+            route distincte de /admin/* qui reste le compte de l'utilisateur */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AdminOnlyRoute />}>
+            <Route
+              path="/staff"
+              element={
+                <AdminLayout>
+                  <PlatformAdminPage />
+                </AdminLayout>
+              }
+            />
+          </Route>
+        </Route>
+
         {/* Fallback redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

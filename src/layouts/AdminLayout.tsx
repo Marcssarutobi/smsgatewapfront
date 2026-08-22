@@ -18,7 +18,8 @@ import {
   Sparkles,
   Send,
   Settings,
-  Mail
+  Mail,
+  ShieldCheck
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -51,6 +52,11 @@ const NAV_ITEMS = [
   { path: '/admin/settings', label: 'Paramètres', icon: Settings },
 ];
 
+// Ajouté uniquement pour le staff plateforme (role 'Admin') — une route
+// séparée de /admin/*, qui reste le tableau de bord du propre compte de
+// l'utilisateur, pour ne jamais mélanger les deux univers.
+const STAFF_NAV_ITEM = { path: '/staff', label: 'Panneau plateforme', icon: ShieldCheck };
+
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
@@ -60,7 +66,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const activeItem = NAV_ITEMS.find((item) => item.path === location.pathname) || NAV_ITEMS[0];
+  const navItems = user?.role === 'Admin' ? [...NAV_ITEMS, STAFF_NAV_ITEM] : NAV_ITEMS;
+  const activeItem = navItems.find((item) => item.path === location.pathname) || navItems[0];
 
   // ✅ Chiffres réels de la passerelle (au lieu du "4/5" codé en dur)
   const devicesTotal = devices?.length ?? 0;
@@ -132,7 +139,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
           {/* Navigation Items */}
           <nav className="px-3 py-2 space-y-1">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
 
