@@ -225,7 +225,11 @@ export function RegisterPage() {
                   className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 />
                 <label htmlFor="terms" className="text-xs text-slate-600 leading-snug cursor-pointer">
-                  J'accepte les Conditions Générales d'Utilisation et la{' '}
+                  J'accepte les{' '}
+                  <Link to="/terms" className="text-indigo-600 hover:underline">
+                    Conditions Générales d'Utilisation
+                  </Link>{' '}
+                  et la{' '}
                   <Link to="/privacy" className="text-indigo-600 hover:underline">
                     Politique de Confidentialité
                   </Link>

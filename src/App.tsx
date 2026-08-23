@@ -9,6 +9,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 import { LandingPage } from './pages/LandingPage';
 import { DocsPage } from './pages/DocsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
+import { TermsPage } from './pages/TermsPage';
 import { ContactPage } from './pages/ContactPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -59,6 +60,14 @@ export default function App() {
           element={
             <MainLayout>
               <PrivacyPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/terms"
+          element={
+            <MainLayout>
+              <TermsPage />
             </MainLayout>
           }
         />

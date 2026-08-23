@@ -60,7 +60,7 @@ export function LandingPage() {
               </h1>
 
               <p className="text-lg text-slate-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
-                Connectez vos téléphones Android à notre API REST en 2 minutes via QR code. Profitez de vos forfaits SMS illimités pour envoyer vos notifications, OTP et alertes à un coût imbattable.
+                Connectez vos téléphones Android à notre API REST en 2 minutes via QR code. Profitez de vos forfaits SMS locaux à tarif préférentiel pour envoyer vos notifications, OTP et alertes à un coût imbattable.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
@@ -151,7 +151,7 @@ export function LandingPage() {
                       <div className="text-[10px] text-slate-500">Temps de livraison</div>
                     </div>
                     <div className="bg-slate-50 p-2 rounded-lg">
-                      <div className="text-xs font-bold text-emerald-600">0.00€</div>
+                      <div className="text-xs font-bold text-emerald-600">0 FCFA</div>
                       <div className="text-[10px] text-slate-500">Coût par SMS</div>
                     </div>
                     <div className="bg-slate-50 p-2 rounded-lg">
@@ -343,24 +343,24 @@ export function LandingPage() {
               </h2>
 
               <p className="text-slate-300 text-base leading-relaxed">
-                Les fournisseurs d'API SMS traditionnels (Twilio, Vonage, SMSMode) vendent la route opérateur entre 0,045€ et 0,08€ par SMS. Pour 10 000 SMS par mois, cela représente rapidement entre <strong>450€ et 800€ mensuels</strong>.
+                Les fournisseurs d'API SMS traditionnels (Twilio, Vonage, SMSMode) vendent la route opérateur entre 30 FCFA et 52 FCFA par SMS. Pour 10 000 SMS par mois, cela représente rapidement entre <strong>295 000 FCFA et 525 000 FCFA mensuels</strong>.
               </p>
 
               <p className="text-slate-300 text-base leading-relaxed">
-                Avec <strong>SMS Gateway SaaS</strong>, vous connectez vos propres téléphones Android équipés de forfaits mobiles français standards (Orange, Free, Bouygues, SFR) offrant les <strong>SMS illimités</strong>.
+                Avec <strong>SMS Gateway SaaS</strong>, vous connectez vos propres téléphones Android équipés de forfaits SMS locaux (MTN, Moov) à tarif préférentiel — par exemple <strong>5 000 FCFA pour 500 SMS</strong>, soit environ <strong>10 FCFA par SMS</strong>, contre 30 à 52 FCFA via les API classiques.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 <div className="p-4 rounded-xl bg-slate-800/80 border border-slate-700">
                   <div className="text-xs text-slate-400 font-semibold uppercase">API SMS Classique</div>
-                  <div className="text-2xl font-bold text-rose-400 mt-1">~500 € / mois</div>
+                  <div className="text-2xl font-bold text-rose-400 mt-1">~328 000 FCFA / mois</div>
                   <div className="text-xs text-slate-400 mt-1">Facturation par SMS individuel</div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-indigo-950/80 border border-indigo-500/40">
                   <div className="text-xs text-indigo-300 font-semibold uppercase">Notre Passerelle Android</div>
-                  <div className="text-2xl font-bold text-emerald-400 mt-1">79 € / mois fixe</div>
-                  <div className="text-xs text-indigo-200 mt-1">SMS illimités via vos forfaits SIM</div>
+                  <div className="text-2xl font-bold text-emerald-400 mt-1">52 000 FCFA / mois fixe</div>
+                  <div className="text-xs text-indigo-200 mt-1">+ vos forfaits SMS locaux (dès 10 FCFA/SMS)</div>
                 </div>
               </div>
             </div>

@@ -159,7 +159,7 @@ export function ContactPage() {
                 </div>
                 <div>
                   <span className="text-xs font-bold text-slate-400 uppercase block">Ligne Téléphonique Business</span>
-                  <span className="font-semibold text-white">+33 1 40 50 60 70</span>
+                  <span className="font-semibold text-white">+229 01 96 67 59 42</span>
                   <span className="text-[11px] text-slate-400 block">(Du Lundi au Vendredi, 9h-18h)</span>
                 </div>
               </div>
@@ -170,8 +170,8 @@ export function ContactPage() {
                 </div>
                 <div>
                   <span className="text-xs font-bold text-slate-400 uppercase block">Siège Social</span>
-                  <span className="font-medium text-white">42 Avenue des Champs-Élysées</span>
-                  <span className="text-[11px] text-slate-400 block">75008 Paris, France</span>
+                  <span className="font-medium text-white">Cotonou</span>
+                  <span className="text-[11px] text-slate-400 block">Bénin</span>
                 </div>
               </div>
 

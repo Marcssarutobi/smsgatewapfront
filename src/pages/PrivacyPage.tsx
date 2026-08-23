@@ -134,7 +134,7 @@ export function PrivacyPage() {
             <p className="font-bold text-slate-900">
               E-mail DPO : <a href="mailto:dpo@smspasserelle.io" className="text-indigo-600 hover:underline">dpo@smspasserelle.io</a>
             </p>
-            <p className="text-xs text-slate-500">Adresse : Acme Technologies SAS, 42 Avenue des Champs-Élysées, 75008 Paris, France</p>
+            <p className="text-xs text-slate-500">Adresse : Acme Technologies SAS, Cotonou, Bénin</p>
           </CardContent>
         </Card>
       </div>
