@@ -6,7 +6,7 @@ export interface ContactMessage {
   email: string;
   subject: string;
   message: string;
-  read_at: string | null;
+  is_read: boolean;
   created_at: string;
 }
 
@@ -18,11 +18,11 @@ export interface PaginatedContactMessages {
 
 export const adminContactService = {
   list: async () => {
-    const { data } = await api.get<PaginatedContactMessages>('/admin/contact-messages');
+    const { data } = await api.get<PaginatedContactMessages>('/admin/contacts');
     return data;
   },
   markRead: async (id: number) => {
-    const { data } = await api.post(`/admin/contact-messages/${id}/read`);
+    const { data } = await api.post(`/admin/contacts/${id}/read`);
     return data;
   },
 };

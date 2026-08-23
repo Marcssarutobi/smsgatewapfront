@@ -1,15 +1,13 @@
 import { api } from './api';
-import { AppNotification, PaginatedNotifications } from '../type/notification';
+import { NotificationsResponse } from '../type/notification';
 
 export const notificationService = {
+  // Une seule requête renvoie à la fois la liste ET le compteur non-lu
+  // (voir NotificationController::index côté backend) — pas d'endpoint
+  // /unread-count séparé.
   list: async () => {
-    const { data } = await api.get<PaginatedNotifications>('/notifications');
+    const { data } = await api.get<NotificationsResponse>('/notifications');
     return data;
-  },
-
-  unreadCount: async () => {
-    const { data } = await api.get<{ count: number }>('/notifications/unread-count');
-    return data.count;
   },
 
   markRead: async (id: string) => {
@@ -19,6 +17,13 @@ export const notificationService = {
 
   markAllRead: async () => {
     const { data } = await api.post('/notifications/read-all');
+    return data;
+  },
+
+  // Enregistre le token FCM de cet appareil (web ou mobile) pour recevoir
+  // de vraies notifications push, en plus du centre de notifications en base.
+  registerFcmToken: async (fcmToken: string) => {
+    const { data } = await api.post('/notifications/fcm-token', { fcm_token: fcmToken });
     return data;
   },
 };

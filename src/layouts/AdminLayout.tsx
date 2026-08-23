@@ -38,7 +38,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { useLogout, useMe, useResendVerificationEmail } from '../hook/features/useUser';
 import { useAllDevice } from '../hook/features/useDevice';
-import { useNotifications, useUnreadNotificationCount, useMarkNotificationRead, useMarkAllNotificationsRead } from '../hook/features/useNotifications';
+import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from '../hook/features/useNotifications';
 import toast from 'react-hot-toast';
 
 const NAV_ITEMS = [
@@ -324,15 +324,16 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 function NotificationBell() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const { data: unreadCount = 0 } = useUnreadNotificationCount();
-  const { data: notifications } = useNotifications();
+  const { data } = useNotifications();
+  const unreadCount = data?.unread_count ?? 0;
+  const notifications = data?.notifications;
   const { mutate: markRead } = useMarkNotificationRead();
   const { mutate: markAllRead } = useMarkAllNotificationsRead();
 
-  const handleClickNotification = (id: string, url?: string) => {
+  const handleClickNotification = (id: string, link?: string) => {
     markRead(id);
     setOpen(false);
-    if (url) navigate(url);
+    if (link) navigate(link);
   };
 
   return (
@@ -373,7 +374,7 @@ function NotificationBell() {
             {notifications?.data.map((n) => (
               <button
                 key={n.id}
-                onClick={() => handleClickNotification(n.id, n.data.url)}
+                onClick={() => handleClickNotification(n.id, n.data.link)}
                 className={`w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer ${
                   !n.read_at ? 'bg-indigo-50/50' : ''
                 }`}

@@ -493,14 +493,14 @@ function ContactMessagesTab() {
       )}
 
       {data?.data.map((msg) => (
-        <Card key={msg.id} className={!msg.read_at ? 'border-indigo-200 bg-indigo-50/40' : ''}>
+        <Card key={msg.id} className={!msg.is_read ? 'border-indigo-200 bg-indigo-50/40' : ''}>
           <CardContent className="pt-6 space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-bold text-slate-900">{msg.name} <span className="font-normal text-slate-400">— {msg.email}</span></p>
                 <p className="text-xs text-slate-500">{msg.subject} · {new Date(msg.created_at).toLocaleString('fr-FR')}</p>
               </div>
-              {!msg.read_at && (
+              {!msg.is_read && (
                 <Button variant="ghost" size="sm" onClick={() => markRead(msg.id)}>
                   <MailOpen className="h-3.5 w-3.5 mr-1.5" /> Marquer comme lu
                 </Button>
