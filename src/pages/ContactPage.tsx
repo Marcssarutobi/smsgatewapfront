@@ -5,6 +5,8 @@ import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { contactService } from '../services/contactService';
+import toast from 'react-hot-toast';
 
 export function ContactPage() {
   const [name, setName] = useState('');
@@ -14,17 +16,28 @@ export function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await contactService.send({ name, email, subject, message });
       setIsSuccess(true);
       setName('');
       setEmail('');
       setMessage('');
-    }, 800);
+    } catch (err: any) {
+      const validationErrors = err?.response?.data?.errors;
+      if (validationErrors) {
+        Object.values(validationErrors).flat().forEach((m) => toast.error(m as string));
+      } else if (err?.response?.status === 429) {
+        toast.error('Trop de tentatives, réessayez dans quelques minutes.');
+      } else {
+        toast.error("Une erreur est survenue, réessayez.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

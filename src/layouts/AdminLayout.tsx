@@ -38,6 +38,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { useLogout, useMe, useResendVerificationEmail } from '../hook/features/useUser';
 import { useAllDevice } from '../hook/features/useDevice';
+import { useNotifications, useUnreadNotificationCount, useMarkNotificationRead, useMarkAllNotificationsRead } from '../hook/features/useNotifications';
 import toast from 'react-hot-toast';
 
 const NAV_ITEMS = [
@@ -235,10 +236,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Notifications */}
-            <button className="relative p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-lg transition-colors cursor-pointer">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-indigo-600" />
-            </button>
+            <NotificationBell />
 
             {/* User Dropdown */}
             <DropdownMenu>
@@ -320,7 +318,81 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Bandeau discret rappelant de vérifier son email, affiché tant que
+// Centre de notifications : remplace l'ancien bouton Bell purement décoratif
+// (pastille toujours affichée en dur, aucun onClick). Polling 30s (voir
+// useNotifications) plutôt que websocket — suffisant pour ce cas d'usage.
+function NotificationBell() {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const { data: unreadCount = 0 } = useUnreadNotificationCount();
+  const { data: notifications } = useNotifications();
+  const { mutate: markRead } = useMarkNotificationRead();
+  const { mutate: markAllRead } = useMarkAllNotificationsRead();
+
+  const handleClickNotification = (id: string, url?: string) => {
+    markRead(id);
+    setOpen(false);
+    if (url) navigate(url);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="relative p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-lg transition-colors cursor-pointer"
+      >
+        <Bell className="h-5 w-5" />
+        {unreadCount > 0 && (
+          <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <>
+          {/* Overlay pour fermer au clic en dehors, sans dépendance externe */}
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg z-50">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+              <p className="text-sm font-bold text-slate-900">Notifications</p>
+              {unreadCount > 0 && (
+                <button
+                  onClick={() => markAllRead()}
+                  className="text-xs font-medium text-indigo-600 hover:underline cursor-pointer"
+                >
+                  Tout marquer comme lu
+                </button>
+              )}
+            </div>
+
+            {(!notifications || notifications.data.length === 0) && (
+              <p className="px-4 py-6 text-center text-xs text-slate-400">Aucune notification pour le moment.</p>
+            )}
+
+            {notifications?.data.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => handleClickNotification(n.id, n.data.url)}
+                className={`w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer ${
+                  !n.read_at ? 'bg-indigo-50/50' : ''
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  {!n.read_at && <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-indigo-600 shrink-0" />}
+                  <div className={!n.read_at ? '' : 'pl-3.5'}>
+                    <p className="text-xs font-bold text-slate-900">{n.data.title}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{n.data.body}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 // email_verified_at est null côté backend. Disparaît automatiquement après
 // vérification (react-query invalide 'me' au retour sur /admin).
 function EmailVerificationBanner() {

@@ -8,14 +8,27 @@ import {
   Globe2,
   MousePointerClick,
   AlertTriangle,
+  Pencil,
+  Plus,
+  Ban,
+  Mail,
+  MailOpen,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../../components/ui/dialog';
 import { usePlatformDashboard, usePlatformAnalytics } from '../../services/platformAdminService';
+import { useAdminPlans, useCreatePlan, useUpdatePlan, useDeactivatePlan } from '../../hook/features/useAdminPlans';
+import { useAdminContactMessages, useMarkContactMessageRead } from '../../hook/features/useAdminContactMessages';
+import { Plan } from '../../type/plan';
+import toast from 'react-hot-toast';
 
 // Formate une date GA4 (format brut "YYYYMMDD") en jour/mois lisible
 function formatGaDate(raw: string) {
@@ -56,6 +69,15 @@ export function PlatformAdminPage() {
         <p className="text-sm text-slate-500">Vue d'ensemble de la plateforme, tous comptes confondus.</p>
       </div>
 
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="plans">Tarifs</TabsTrigger>
+          <TabsTrigger value="messages">Messages</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview">
+          <div className="space-y-6">
       {/* Stats globales de la plateforme */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
@@ -246,6 +268,248 @@ export function PlatformAdminPage() {
           </Card>
         </>
       )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="plans">
+          <PlansManagementTab />
+        </TabsContent>
+
+        <TabsContent value="messages">
+          <ContactMessagesTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Onglet Tarifs : liste des plans (actifs et désactivés) + création/édition
+// ---------------------------------------------------------------------------
+const emptyPlanForm = { name: '', price: '', currency: 'XOF', sms_quota_monthly: '', max_devices: '' };
+
+function PlansManagementTab() {
+  const { data: plans, isLoading } = useAdminPlans();
+  const { mutate: createPlan, isPending: isCreating } = useCreatePlan();
+  const { mutate: updatePlan, isPending: isUpdating } = useUpdatePlan();
+  const { mutate: deactivatePlan } = useDeactivatePlan();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [form, setForm] = useState(emptyPlanForm);
+
+  const openCreate = () => {
+    setEditingPlan(null);
+    setForm(emptyPlanForm);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (plan: Plan) => {
+    setEditingPlan(plan);
+    setForm({
+      name: plan.name,
+      price: plan.price,
+      currency: plan.currency,
+      sms_quota_monthly: String(plan.sms_quota_monthly),
+      max_devices: String(plan.max_devices),
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const payload = {
+      name: form.name,
+      price: Number(form.price),
+      currency: form.currency,
+      sms_quota_monthly: Number(form.sms_quota_monthly),
+      max_devices: Number(form.max_devices),
+    };
+
+    const onSuccess = () => {
+      toast.success(editingPlan ? 'Plan mis à jour' : 'Plan créé');
+      setDialogOpen(false);
+    };
+    const onError = (err: any) => {
+      const validationErrors = err?.response?.data?.errors;
+      if (validationErrors) {
+        Object.values(validationErrors).flat().forEach((m) => toast.error(m as string));
+      } else {
+        toast.error('Une erreur est survenue.');
+      }
+    };
+
+    if (editingPlan) {
+      updatePlan({ id: editingPlan.id, ...payload }, { onSuccess, onError });
+    } else {
+      createPlan(payload, { onSuccess, onError });
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={openCreate} className="font-semibold">
+          <Plus className="h-4 w-4 mr-1.5" /> Nouveau plan
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nom</TableHead>
+                <TableHead>Prix</TableHead>
+                <TableHead>Quota SMS/mois</TableHead>
+                <TableHead>Devices max</TableHead>
+                <TableHead>Statut</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading && (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-6 text-center text-sm text-slate-400">
+                    Chargement...
+                  </TableCell>
+                </TableRow>
+              )}
+              {plans?.map((plan) => (
+                <TableRow key={plan.id}>
+                  <TableCell className="font-medium">{plan.name}</TableCell>
+                  <TableCell>{Number(plan.price).toLocaleString('fr-FR')} {plan.currency}</TableCell>
+                  <TableCell>{plan.sms_quota_monthly.toLocaleString('fr-FR')}</TableCell>
+                  <TableCell>{plan.max_devices}</TableCell>
+                  <TableCell>
+                    <Badge variant={plan.active ? 'success' : 'secondary'}>
+                      {plan.active ? 'Actif' : 'Désactivé'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right space-x-1">
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(plan)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    {plan.active && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-rose-600 hover:text-rose-700"
+                        onClick={() => {
+                          if (confirm(`Désactiver le plan "${plan.name}" ? Il ne sera plus proposé sur la landing page, mais restera valide pour les abonnés existants.`)) {
+                            deactivatePlan(plan.id, { onSuccess: () => toast.success('Plan désactivé') });
+                          }
+                        }}
+                      >
+                        <Ban className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>{editingPlan ? `Modifier le plan ${editingPlan.name}` : 'Nouveau plan'}</DialogTitle>
+            <DialogDescription>
+              {editingPlan
+                ? 'Les abonnés déjà sur ce plan ne sont pas affectés rétroactivement pour leur période en cours.'
+                : 'Ce plan apparaîtra sur la landing page dès sa création.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">Nom du plan</label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700">Prix (FCFA)</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700">Quota SMS/mois</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.sms_quota_monthly}
+                  onChange={(e) => setForm({ ...form, sms_quota_monthly: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">Nombre de devices max</label>
+              <Input
+                type="number"
+                min={1}
+                value={form.max_devices}
+                onChange={(e) => setForm({ ...form, max_devices: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <DialogClose onClick={() => setDialogOpen(false)} />
+            <Button type="submit" disabled={isCreating || isUpdating} className="font-semibold">
+              {editingPlan ? 'Enregistrer' : 'Créer le plan'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </Dialog>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Onglet Messages : messages reçus via le formulaire /contact du site
+// ---------------------------------------------------------------------------
+function ContactMessagesTab() {
+  const { data, isLoading } = useAdminContactMessages();
+  const { mutate: markRead } = useMarkContactMessageRead();
+
+  if (isLoading) {
+    return <p className="text-sm text-slate-500 py-6">Chargement...</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {(!data || data.data.length === 0) && (
+        <p className="text-sm text-slate-400 py-6 text-center">Aucun message reçu pour le moment.</p>
+      )}
+
+      {data?.data.map((msg) => (
+        <Card key={msg.id} className={!msg.read_at ? 'border-indigo-200 bg-indigo-50/40' : ''}>
+          <CardContent className="pt-6 space-y-2">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-slate-900">{msg.name} <span className="font-normal text-slate-400">— {msg.email}</span></p>
+                <p className="text-xs text-slate-500">{msg.subject} · {new Date(msg.created_at).toLocaleString('fr-FR')}</p>
+              </div>
+              {!msg.read_at && (
+                <Button variant="ghost" size="sm" onClick={() => markRead(msg.id)}>
+                  <MailOpen className="h-3.5 w-3.5 mr-1.5" /> Marquer comme lu
+                </Button>
+              )}
+            </div>
+            <p className="text-sm text-slate-700 whitespace-pre-wrap">{msg.message}</p>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
