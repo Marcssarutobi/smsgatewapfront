@@ -444,11 +444,10 @@ export function LandingPage() {
             const isPopular = plan.id === popularPlanId;
             // Certains plans (ex: Trial) n'ont pas de liste `features` en base :
             // on reconstruit une liste minimale à partir des champs bruts du plan.
-            const features = plan.features?.length ? plan.features : [
-              `${plan.sms_quota_monthly.toLocaleString('fr-FR')} SMS / mois inclus`,
+            const features = [
+              `${Number(plan.sms_quota_monthly).toLocaleString('fr-FR')} SMS / mois inclus`,
               `Jusqu'à ${plan.max_devices} téléphone${plan.max_devices > 1 ? 's' : ''} Android connecté${plan.max_devices > 1 ? 's' : ''}`,
-              'API REST complète v1',
-              'Support des cartes Dual-SIM',
+              ...(plan.features ?? []),
             ];
 
             return (
