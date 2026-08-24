@@ -3,8 +3,8 @@ import { tokenStorage } from '../lib/tokenStorage';
 
 // Variables d'environnement Vite (voir .env.example) — avec repli sur le dev local
 // si le fichier .env n'a pas été créé.
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api';
-const WEB_URL = import.meta.env.VITE_WEB_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? 'https://sms-gateway-saas.onebioafrica.com/api';
+const WEB_URL = import.meta.env.VITE_WEB_URL ?? 'https://sms-gateway-saas.onebioafrica.com';
 
 export const api = axios.create({
   baseURL: API_URL,
