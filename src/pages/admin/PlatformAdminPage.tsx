@@ -11,6 +11,7 @@ import {
   Pencil,
   Plus,
   Ban,
+  CheckCircle,
   Mail,
   MailOpen,
 } from 'lucide-react';
@@ -391,7 +392,7 @@ function PlansManagementTab() {
                     <Button variant="ghost" size="sm" onClick={() => openEdit(plan)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    {plan.active && (
+                    {plan.active ? (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -403,6 +404,29 @@ function PlansManagementTab() {
                         }}
                       >
                         <Ban className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-emerald-600 hover:text-emerald-700"
+                        disabled={isUpdating}
+                        onClick={() => {
+                          updatePlan(
+                            {
+                              id: plan.id,
+                              name: plan.name,
+                              price: Number(plan.price),
+                              currency: plan.currency,
+                              sms_quota_monthly: plan.sms_quota_monthly,
+                              max_devices: plan.max_devices,
+                              active: true,
+                            },
+                            { onSuccess: () => toast.success('Plan réactivé') }
+                          );
+                        }}
+                      >
+                        <CheckCircle className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </TableCell>

@@ -36,7 +36,11 @@ function formatPrice(price: string, currency: string): string {
 
 export function LandingPage() {
   const { data: plans = [], isLoading: isLoadingPlans } = usePlans();
-  const activePlans = plans.filter((p) => p.active);
+  // On n'affiche jamais le plan Trial dans la grille tarifaire : c'est le plan
+  // par défaut attribué automatiquement à l'inscription (voir "Démarrer
+  // gratuitement" / "Créer un compte gratuitement" ci-dessous), pas une offre
+  // à choisir parmi les autres. Les plans payants restent seuls affichés ici.
+  const activePlans = plans.filter((p) => p.active && p.name.toLowerCase() !== 'trial');
   // À défaut d'un champ "populaire" côté back, on met en avant le plan du milieu
   // (ni le moins cher ni le plus cher) une fois les plans triés par prix.
   const sortedPlans = [...activePlans].sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
