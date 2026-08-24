@@ -64,15 +64,16 @@ export function Header() {
           >
             Contact
           </Link>
-          <Link
-            to="/download-app"
+          <a
+            href="https://github.com/Marcssarutobi/smsgatewapfront/releases/download/v1.0.0/sms-gateway.apk"
+            download
             className={`flex items-center gap-1.5 transition-colors ${
               isNavActive('/download-app') ? 'text-indigo-600 font-semibold' : 'text-slate-600 hover:text-indigo-600'
             }`}
           >
             <Download className="h-3.5 w-3.5" />
             App mobile
-          </Link>
+          </a>
         </nav>
 
         {/* Right CTA / Auth */}
