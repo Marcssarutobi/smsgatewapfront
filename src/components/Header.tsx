@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Smartphone, Menu, X, ArrowRight, LayoutDashboard } from 'lucide-react';
+import { Smartphone, Menu, X, ArrowRight, LayoutDashboard, Download } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function Header() {
@@ -64,6 +64,15 @@ export function Header() {
           >
             Contact
           </Link>
+          <Link
+            to="/download-app"
+            className={`flex items-center gap-1.5 transition-colors ${
+              isNavActive('/download-app') ? 'text-indigo-600 font-semibold' : 'text-slate-600 hover:text-indigo-600'
+            }`}
+          >
+            <Download className="h-3.5 w-3.5" />
+            App mobile
+          </Link>
         </nav>
 
         {/* Right CTA / Auth */}
@@ -79,12 +88,12 @@ export function Header() {
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
-          <Link to="/admin" className="ml-1">
+          {/* <Link to="/admin" className="ml-1">
             <Button variant="outline" size="sm" className="gap-1.5 text-xs text-slate-600">
               <LayoutDashboard className="h-3.5 w-3.5" />
               Demo Admin
             </Button>
-          </Link>
+          </Link> */}
         </div>
 
         {/* Mobile menu trigger */}
@@ -142,6 +151,14 @@ export function Header() {
               className="px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100"
             >
               Contact
+            </Link>
+            <Link
+              to="/download-app"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100"
+            >
+              <Download className="h-4 w-4" />
+              App mobile
             </Link>
 
             <div className="pt-4 flex flex-col gap-2 border-t border-slate-100">
