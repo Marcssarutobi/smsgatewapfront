@@ -12,19 +12,19 @@ export interface PlanPayload {
 
 export const adminPlanService = {
   list: async () => {
-    const { data } = await api.get<Plan[]>('/plans');
+    const { data } = await api.get<Plan[]>('/admin/plans');
     return data;
   },
   create: async (payload: PlanPayload) => {
-    const { data } = await api.post<Plan>('/plans', payload);
+    const { data } = await api.post<Plan>('/admin/plans', payload);
     return data;
   },
   update: async ({ id, ...payload }: PlanPayload & { id: number }) => {
-    const { data } = await api.put<Plan>(`/plans/${id}`, payload);
+    const { data } = await api.put<Plan>(`/admin/plans/${id}`, payload);
     return data;
   },
   deactivate: async (id: number) => {
-    const { data } = await api.delete(`/plans/${id}`);
+    const { data } = await api.delete(`/admin/plans/${id}`);
     return data;
   },
 };
