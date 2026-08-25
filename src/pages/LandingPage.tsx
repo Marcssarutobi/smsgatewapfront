@@ -373,7 +373,7 @@ export function LandingPage() {
 
                 <div className="p-4 rounded-xl bg-indigo-950/80 border border-indigo-500/40">
                   <div className="text-xs text-indigo-300 font-semibold uppercase">Notre Passerelle Android</div>
-                  <div className="text-2xl font-bold text-emerald-400 mt-1">60 000 FCFA / mois fixe</div>
+                  <div className="text-2xl font-bold text-emerald-400 mt-1">25 000 FCFA / mois fixe</div>
                   <div className="text-[10px] text-indigo-300/70 mt-0.5">Plan Pro — jusqu'à 12 000 SMS/mois inclus</div>
                   <div className="text-xs text-indigo-200 mt-1">+ vos forfaits SMS locaux (dès 10 FCFA/SMS)</div>
                 </div>
