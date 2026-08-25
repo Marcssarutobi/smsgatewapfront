@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
+import { useAnalytics } from './hook/features/useAnalytics'
+
 // Layouts
 import { MainLayout } from './layouts/MainLayout';
 import { AdminLayout } from './layouts/AdminLayout';
@@ -34,9 +36,15 @@ import AdminOnlyRoute from './router/AdminOnlyRoute';
 import { AdminSendTestSmsPage } from './pages/admin/AdminSendTestSmsPage';
 import { PlatformAdminPage } from './pages/admin/PlatformAdminPage';
 
+function RouteTracker() {
+  useAnalytics();
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <RouteTracker />
       <Routes>
         {/* Public Routes with Main Header/Footer */}
         <Route
