@@ -553,7 +553,7 @@ export function LandingPage() {
               </Button>
             </Link>
             <Link to="/contact">
-              <Button size="lg" variant="outline" className="border-indigo-300/40 text-white hover:bg-indigo-700/50 h-12">
+              <Button size="lg" variant="outline" className="border-indigo-300/40 text-indigo-700 hover:bg-indigo-700/50 h-12">
                 Contacter un conseiller
               </Button>
             </Link>
