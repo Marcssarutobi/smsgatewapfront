@@ -82,13 +82,14 @@ export function LandingPage() {
               </div>
 
               <div className="pt-1">
-                <Link
-                  to="/download-app"
+                <a
+                  href="https://github.com/Marcssarutobi/smsgatewapfront/releases/download/v1.0.0/sms-gateway.apk"
+                  download
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700"
                 >
                   <Smartphone className="h-4 w-4" />
                   Déjà client ? Téléchargez l&apos;application mobile
-                </Link>
+                </a>
               </div>
 
               <div className="pt-6 border-t border-slate-200/80 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-slate-500 font-medium">
