@@ -59,9 +59,7 @@ function StatCard({
 }
 
 export function PlatformAdminPage() {
-  const [days, setDays] = useState(30);
   const { data: stats, isLoading: statsLoading } = usePlatformDashboard();
-  const { data: analytics, isLoading: analyticsLoading } = usePlatformAnalytics(days);
 
   return (
     <div className="space-y-6">
@@ -73,6 +71,7 @@ export function PlatformAdminPage() {
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="analytics">Google Analytics</TabsTrigger>
           <TabsTrigger value="plans">Tarifs</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
         </TabsList>
@@ -157,10 +156,36 @@ export function PlatformAdminPage() {
           </CardContent>
         </Card>
       </div>
+          </div>
+        </TabsContent>
 
-      {/* Google Analytics */}
+        <TabsContent value="analytics">
+          <GoogleAnalyticsTab />
+        </TabsContent>
+
+        <TabsContent value="plans">
+          <PlansManagementTab />
+        </TabsContent>
+
+        <TabsContent value="messages">
+          <ContactMessagesTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Onglet Google Analytics : trafic du site, séparé de la vue d'ensemble
+// ---------------------------------------------------------------------------
+function GoogleAnalyticsTab() {
+  const [days, setDays] = useState(30);
+  const { data: analytics, isLoading: analyticsLoading } = usePlatformAnalytics(days);
+
+  return (
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">Trafic du site (Google Analytics)</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Trafic du site</h2>
         <div className="flex gap-1">
           {[7, 30, 90].map((d) => (
             <button
@@ -198,6 +223,10 @@ export function PlatformAdminPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {analyticsLoading && (
+        <p className="text-sm text-slate-400 py-6">Chargement...</p>
       )}
 
       {analytics?.configured && !analytics.error && (
@@ -269,17 +298,6 @@ export function PlatformAdminPage() {
           </Card>
         </>
       )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="plans">
-          <PlansManagementTab />
-        </TabsContent>
-
-        <TabsContent value="messages">
-          <ContactMessagesTab />
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }
