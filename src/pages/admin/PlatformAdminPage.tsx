@@ -282,7 +282,7 @@ function GoogleAnalyticsTab() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 lg:grid-cols-2">
-                <div className="flex items-center justify-center rounded-xl bg-slate-50 p-2">
+                <div className="w-full">
                   <WorldVisitorsMap data={analytics.by_country ?? []} />
                 </div>
 
