@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Users,
   Smartphone,
@@ -26,6 +26,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '.
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../../components/ui/dialog';
 import { usePlatformDashboard, usePlatformAnalytics } from '../../services/platformAdminService';
+import { WorldVisitorsMap } from '../../components/admin/WorldVisitorsMap';
 import { useAdminPlans, useCreatePlan, useUpdatePlan, useDeactivatePlan } from '../../hook/features/useAdminPlans';
 import { useAdminContactMessages, useMarkContactMessageRead } from '../../hook/features/useAdminContactMessages';
 import { Plan } from '../../type/plan';
@@ -182,6 +183,15 @@ function GoogleAnalyticsTab() {
   const [days, setDays] = useState(30);
   const { data: analytics, isLoading: analyticsLoading } = usePlatformAnalytics(days);
 
+  // Le backend renvoie déjà les pays triés décroissant (voir
+  // GoogleAnalyticsService::fetchByCountry), on re-trie quand même ici par
+  // sécurité pour ne pas dépendre silencieusement de cet ordre côté API.
+  const sortedCountries = useMemo(
+    () => [...(analytics?.by_country ?? [])].sort((a, b) => b.active_users - a.active_users),
+    [analytics?.by_country]
+  );
+  const maxCountryVisitors = sortedCountries[0]?.active_users ?? 0;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -270,30 +280,39 @@ function GoogleAnalyticsTab() {
                 <Globe2 className="h-4 w-4" /> Visiteurs par pays
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Pays</TableHead>
-                    <TableHead className="text-right">Visiteurs actifs</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(analytics.by_country ?? []).map((row) => (
-                    <TableRow key={row.country}>
-                      <TableCell>{row.country}</TableCell>
-                      <TableCell className="text-right font-medium">{row.active_users}</TableCell>
-                    </TableRow>
-                  ))}
-                  {(analytics.by_country ?? []).length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={2} className="py-6 text-center text-sm text-slate-400">
-                        Aucune donnée sur cette période.
-                      </TableCell>
-                    </TableRow>
+            <CardContent>
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="flex items-center justify-center rounded-xl bg-slate-50 p-2">
+                  <WorldVisitorsMap data={analytics.by_country ?? []} />
+                </div>
+
+                <div className="max-h-80 space-y-3 overflow-y-auto pr-2">
+                  {sortedCountries.map((row) => {
+                    const percent = maxCountryVisitors > 0
+                      ? Math.round((row.active_users / maxCountryVisitors) * 100)
+                      : 0;
+                    return (
+                      <div key={row.country}>
+                        <div className="mb-1 flex items-center justify-between text-sm">
+                          <span className="font-medium text-slate-700">{row.country}</span>
+                          <span className="text-slate-500">{row.active_users.toLocaleString('fr-FR')}</span>
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full bg-indigo-600"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {sortedCountries.length === 0 && (
+                    <p className="py-6 text-center text-sm text-slate-400">
+                      Aucune donnée sur cette période.
+                    </p>
                   )}
-                </TableBody>
-              </Table>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </>
