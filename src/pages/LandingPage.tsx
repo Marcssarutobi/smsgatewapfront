@@ -83,7 +83,7 @@ export function LandingPage() {
 
               <div className="pt-1">
                 <a
-                  href="https://github.com/Marcssarutobi/smsgatewapfront/releases/download/v1.0.0/sms-gateway.apk"
+                  href="/downloads/sms-gateway.apk"
                   download
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700"
                 >

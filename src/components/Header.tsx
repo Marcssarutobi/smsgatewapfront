@@ -65,7 +65,7 @@ export function Header() {
             Contact
           </Link>
           <a
-            href="https://github.com/Marcssarutobi/smsgatewapfront/releases/download/v1.0.0/sms-gateway.apk"
+            href="/downloads/sms-gateway.apk"
             download
             className={`flex items-center gap-1.5 transition-colors ${
               isNavActive('/download-app') ? 'text-indigo-600 font-semibold' : 'text-slate-600 hover:text-indigo-600'
