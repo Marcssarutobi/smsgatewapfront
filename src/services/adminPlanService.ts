@@ -7,6 +7,10 @@ export interface PlanPayload {
   currency?: string;
   sms_quota_monthly: number;
   max_devices: number;
+  // null = pas de pack de recharge proposé pour ce plan. Omettre le champ
+  // (undefined) laisse la valeur actuelle inchangée côté backend (validation
+  // 'sometimes') ; envoyer explicitement null la réinitialise.
+  topup_price?: number | null;
   active?: boolean;
 }
 

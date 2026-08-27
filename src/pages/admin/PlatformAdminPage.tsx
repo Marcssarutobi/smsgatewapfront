@@ -330,7 +330,7 @@ function GoogleAnalyticsTab() {
 // ---------------------------------------------------------------------------
 // Onglet Tarifs : liste des plans (actifs et désactivés) + création/édition
 // ---------------------------------------------------------------------------
-const emptyPlanForm = { name: '', price: '', currency: 'XOF', sms_quota_monthly: '', max_devices: '' };
+const emptyPlanForm = { name: '', price: '', currency: 'XOF', sms_quota_monthly: '', max_devices: '', topup_price: '' };
 
 function PlansManagementTab() {
   const { data: plans, isLoading } = useAdminPlans();
@@ -356,6 +356,7 @@ function PlansManagementTab() {
       currency: plan.currency,
       sms_quota_monthly: String(plan.sms_quota_monthly),
       max_devices: String(plan.max_devices),
+      topup_price: plan.topup_price ?? '',
     });
     setDialogOpen(true);
   };
@@ -369,6 +370,9 @@ function PlansManagementTab() {
       currency: form.currency,
       sms_quota_monthly: Number(form.sms_quota_monthly),
       max_devices: Number(form.max_devices),
+      // Champ vide = pas de recharge proposée pour ce plan (envoie null,
+      // qui désactive explicitement l'achat de crédit côté backend).
+      topup_price: form.topup_price !== '' ? Number(form.topup_price) : null,
     };
 
     const onSuccess = () => {
@@ -406,7 +410,8 @@ function PlansManagementTab() {
               <TableRow>
                 <TableHead>Nom</TableHead>
                 <TableHead>Prix</TableHead>
-                <TableHead>Quota SMS/mois</TableHead>
+                <TableHead>Crédit SMS/mois</TableHead>
+                <TableHead>Recharge</TableHead>
                 <TableHead>Devices max</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -415,7 +420,7 @@ function PlansManagementTab() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-6 text-center text-sm text-slate-400">
+                  <TableCell colSpan={7} className="py-6 text-center text-sm text-slate-400">
                     Chargement...
                   </TableCell>
                 </TableRow>
@@ -425,6 +430,16 @@ function PlansManagementTab() {
                   <TableCell className="font-medium">{plan.name}</TableCell>
                   <TableCell>{Number(plan.price).toLocaleString('fr-FR')} {plan.currency}</TableCell>
                   <TableCell>{plan.sms_quota_monthly.toLocaleString('fr-FR')}</TableCell>
+                  <TableCell>
+                    {plan.topup_price ? (
+                      <span className="text-slate-700">
+                        +{Math.round(plan.sms_quota_monthly / 2).toLocaleString('fr-FR')} SMS
+                        <span className="text-slate-400"> · {Number(plan.topup_price).toLocaleString('fr-FR')} {plan.currency}</span>
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">Non proposée</span>
+                    )}
+                  </TableCell>
                   <TableCell>{plan.max_devices}</TableCell>
                   <TableCell>
                     <Badge variant={plan.active ? 'success' : 'secondary'}>
@@ -508,7 +523,7 @@ function PlansManagementTab() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700">Quota SMS/mois</label>
+                <label className="text-xs font-semibold text-slate-700">Crédit SMS/mois</label>
                 <Input
                   type="number"
                   min={0}
@@ -517,6 +532,23 @@ function PlansManagementTab() {
                   required
                 />
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">
+                Prix d'un pack de recharge (FCFA)
+              </label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="Laisser vide pour désactiver la recharge"
+                value={form.topup_price}
+                onChange={(e) => setForm({ ...form, topup_price: e.target.value })}
+              />
+              <p className="text-xs text-slate-400">
+                {form.sms_quota_monthly && Number(form.sms_quota_monthly) > 0
+                  ? `Un pack ajoutera ${Math.round(Number(form.sms_quota_monthly) / 2).toLocaleString('fr-FR')} SMS de crédit (50% du crédit mensuel du plan).`
+                  : 'Renseignez le crédit SMS/mois ci-dessus pour voir la quantité ajoutée par pack.'}
+              </p>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700">Nombre de devices max</label>
