@@ -24,7 +24,9 @@ export function AdminSubscriptionPage() {
 
   const currentPlan = subscription?.plan;
   const usedSms = subscription?.sms_used ?? 0;
-  const maxSms = currentPlan?.sms_quota_monthly ?? 0;
+  // Le quota affiché doit couvrir TOUTE la durée souscrite (ex: plan à 1000
+  // SMS/mois pris pour 3 mois -> 3000 SMS), pas juste le quota mensuel du plan.
+  const maxSms = (currentPlan?.sms_quota_monthly ?? 0) * Math.max(1, subscription?.duration_months ?? 1);
   const remainingSms = Math.max(0, maxSms - usedSms);
   const usagePercentage = maxSms > 0 ? Math.round((usedSms / maxSms) * 100) : 0;
 
@@ -165,7 +167,12 @@ export function AdminSubscriptionPage() {
               <ul className="space-y-2.5 text-xs text-slate-300">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>{maxSms.toLocaleString()} SMS par mois</span>
+                  <span>
+                    {currentPlan?.sms_quota_monthly?.toLocaleString()} SMS / mois
+                    {(subscription?.duration_months ?? 1) > 1
+                      ? ` (${maxSms.toLocaleString()} SMS sur ${subscription?.duration_months} mois)`
+                      : ''}
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />

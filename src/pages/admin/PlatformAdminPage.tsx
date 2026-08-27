@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Users,
   Smartphone,
@@ -29,6 +29,7 @@ import { usePlatformDashboard, usePlatformAnalytics } from '../../services/platf
 import { WorldVisitorsMap } from '../../components/admin/WorldVisitorsMap';
 import { useAdminPlans, useCreatePlan, useUpdatePlan, useDeactivatePlan } from '../../hook/features/useAdminPlans';
 import { useAdminContactMessages, useMarkContactMessageRead } from '../../hook/features/useAdminContactMessages';
+import { useSmsPricing, useUpdateSmsPricing } from '../../hook/features/useAdminSmsPricing';
 import { Plan } from '../../type/plan';
 import toast from 'react-hot-toast';
 
@@ -74,6 +75,7 @@ export function PlatformAdminPage() {
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="analytics">Google Analytics</TabsTrigger>
           <TabsTrigger value="plans">Tarifs</TabsTrigger>
+          <TabsTrigger value="sms-pricing">Tarif SMS</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
         </TabsList>
 
@@ -166,6 +168,10 @@ export function PlatformAdminPage() {
 
         <TabsContent value="plans">
           <PlansManagementTab />
+        </TabsContent>
+
+        <TabsContent value="sms-pricing">
+          <SmsPricingTab />
         </TabsContent>
 
         <TabsContent value="messages">
@@ -532,6 +538,93 @@ function PlansManagementTab() {
           </DialogFooter>
         </form>
       </Dialog>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Onglet Tarif SMS : prix unitaire du SMS utilisé pour le mode Réseau
+// (facturation à l'usage, distinct des plans Device qui ont un prix fixe).
+// ---------------------------------------------------------------------------
+function SmsPricingTab() {
+  const { data: pricing, isLoading } = useSmsPricing();
+  const { mutate: updatePricing, isPending } = useUpdateSmsPricing();
+
+  const [pricePerSms, setPricePerSms] = useState('');
+  const [currency, setCurrency] = useState('XOF');
+
+  useEffect(() => {
+    if (pricing) {
+      setPricePerSms(pricing.price_per_sms);
+      setCurrency(pricing.currency);
+    }
+  }, [pricing]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    updatePricing(
+      { price_per_sms: Number(pricePerSms), currency },
+      {
+        onSuccess: () => toast.success('Tarif SMS mis à jour'),
+        onError: (err: any) => {
+          const validationErrors = err?.response?.data?.errors;
+          if (validationErrors) {
+            Object.values(validationErrors).flat().forEach((m) => toast.error(m as string));
+          } else {
+            toast.error('Une erreur est survenue.');
+          }
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="max-w-md space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-bold text-slate-900">Tarif SMS (mode Réseau)</CardTitle>
+          <CardDescription>
+            Prix unitaire facturé par SMS aux clients ayant choisi le mode Réseau (opérateur).
+            Ce tarif est figé au moment du paiement pour chaque abonnement déjà souscrit :
+            le modifier n'affecte que les nouvelles souscriptions.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <p className="text-sm text-slate-400 py-4">Chargement...</p>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">Prix par SMS</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={pricePerSms}
+                    onChange={(e) => setPricePerSms(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">Devise</label>
+                  <Input
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                    maxLength={3}
+                    required
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" disabled={isPending} className="font-semibold">
+                Enregistrer
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
