@@ -1,4 +1,5 @@
 import {
+  CheckoutPayload,
   CheckoutResponse,
   PaymentStatusResponse,
   SubscribePayload,
@@ -15,7 +16,8 @@ export const subscriptionService = {
     api.post<Subscription>('/subscription', payload).then((r) => r.data),
 
   // Démarre le paiement d'un plan (FedaPay) — ou l'active immédiatement si gratuit.
-  checkout: (payload: SubscribePayload) =>
+  // channel + duration_months déterminent le prix total, recalculé côté serveur.
+  checkout: (payload: CheckoutPayload) =>
     api.post<CheckoutResponse>('/subscription/checkout', payload).then((r) => r.data),
 
   // Polling du statut d'un paiement en cours, utilisé sur la page de callback

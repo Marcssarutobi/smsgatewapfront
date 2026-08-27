@@ -20,6 +20,7 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { EmailVerifiedPage } from './pages/EmailVerifiedPage';
 import { GoogleCallbackPage } from './pages/GoogleCallbackPage';
+import { CompleteSubscriptionPage } from './pages/CompleteSubscriptionPage';
 
 // Admin Pages
 import { AdminOverviewPage } from './pages/admin/AdminOverviewPage';
@@ -143,6 +144,17 @@ export default function App() {
             </MainLayout>
           }
         />
+
+        <Route element={<ProtectedRoute />}>
+          <Route
+            path="/complete-subscription"
+            element={
+              <MainLayout>
+                <CompleteSubscriptionPage />
+              </MainLayout>
+            }
+          />
+        </Route>
 
         <Route element={<ProtectedRoute />}>
           {/* Admin Routes with Sidebar Layout */}

@@ -2,6 +2,8 @@ import type { Plan } from './plan';
 
 export type SubscriptionStatus = 'active' | 'expired' | 'cancelled';
 
+export type SmsChannel = 'device' | 'network';
+
 export interface Subscription {
   id: number;
   user_id: number;
@@ -10,6 +12,10 @@ export interface Subscription {
   sms_used: number;
   current_period_start: string; // date (YYYY-MM-DD)
   current_period_end: string;   // date (YYYY-MM-DD)
+  channel: SmsChannel;
+  duration_months: number;
+  sms_rate_applied: string | null; // decimal non casté côté back -> string
+  amount_paid: string | null;
   created_at: string;
   updated_at: string;
 
@@ -20,6 +26,14 @@ export interface Subscription {
 // Pour un plan payant, utiliser POST /subscription/checkout (paiement FedaPay).
 export interface SubscribePayload {
   plan_id: number;
+}
+
+// Payload de POST /subscription/checkout — channel/duration_months
+// déterminent le prix total, recalculé et vérifié côté serveur.
+export interface CheckoutPayload {
+  plan_id: number;
+  channel: SmsChannel;
+  duration_months: 1 | 3 | 6 | 12;
 }
 
 export type PaymentStatus = 'pending' | 'approved' | 'declined' | 'canceled' | 'failed';

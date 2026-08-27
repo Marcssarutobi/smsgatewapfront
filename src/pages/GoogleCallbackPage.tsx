@@ -4,35 +4,16 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { tokenStorage } from "@/lib/tokenStorage";
 import { userService } from "@/services/userService";
-import { subscriptionService } from "@/services/subscriptionService";
 import { AuthResponse, LoginTwoFactorPendingResponse } from "@/type/user";
 import { Icon } from "@iconify/react";
 import { PENDING_PLAN_STORAGE_KEY } from "./RegisterPage";
 
-// Même logique que RegisterPage.applyPendingPlanThenRedirect : si un plan avait
-// été choisi sur la landing page avant de partir sur Google, on démarre son
-// paiement maintenant que le compte est créé/authentifié. Sinon (connexion
-// classique, ou inscription sans plan pré-choisi), on va directement au dashboard.
-async function applyPendingPlanThenRedirect(navigate: (path: string, opts?: { replace?: boolean }) => void) {
-  const pendingPlanId = sessionStorage.getItem(PENDING_PLAN_STORAGE_KEY);
-  sessionStorage.removeItem(PENDING_PLAN_STORAGE_KEY);
-
-  if (!pendingPlanId) {
-    navigate("/admin", { replace: true });
-    return;
-  }
-
-  try {
-    const data = await subscriptionService.checkout({ plan_id: Number(pendingPlanId) });
-    if (data.checkout_url) {
-      window.location.href = data.checkout_url;
-      return;
-    }
-  } catch {
-    // Ex: Trial gratuit déjà activé à la création du compte Google -> pas une
-    // vraie erreur, on continue simplement vers le dashboard.
-  }
-  navigate("/admin", { replace: true });
+// Un plan a été choisi sur la landing page avant de partir sur Google (voir
+// RegisterPage) : on envoie l'utilisateur choisir son canal d'envoi + sa durée
+// avant de payer (voir CompleteSubscriptionPage) — sinon, direct au dashboard.
+function redirectAfterAuth(navigate: (path: string, opts?: { replace?: boolean }) => void) {
+  const hasPendingPlan = sessionStorage.getItem(PENDING_PLAN_STORAGE_KEY);
+  navigate(hasPendingPlan ? "/complete-subscription" : "/admin", { replace: true });
 }
 
 function isTwoFactorPending(
@@ -64,7 +45,7 @@ export function GoogleCallbackPage() {
         }
         tokenStorage.set(data.token);
         queryClient.invalidateQueries({ queryKey: ["me"] });
-        applyPendingPlanThenRedirect(navigate);
+        redirectAfterAuth(navigate);
       })
       .catch(() => {
         navigate("/login?error=google_auth_failed", { replace: true });

@@ -7,7 +7,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import toast from 'react-hot-toast'
 import { userService } from '../services/userService';
 import { useRegister } from '@/hook/features/useUser';
-import { useCheckoutSubscribe } from '@/hook/features/useSubscribe';
 
 // Clé sessionStorage utilisée pour faire survivre le plan choisi sur la landing
 // page à travers la redirection externe vers Google (le paramètre ?plan=
@@ -26,7 +25,6 @@ export function RegisterPage() {
   const [searchParams] = useSearchParams();
   const planId = searchParams.get('plan');
   const {mutate:register, isPending, error} = useRegister()
-  const { mutateAsync: checkout } = useCheckoutSubscribe();
 
   // Un plan a été choisi sur la landing page (?plan=<id>) : on le mémorise tout
   // de suite, avant même que l'utilisateur choisisse "email" ou "Google".
@@ -36,32 +34,13 @@ export function RegisterPage() {
     }
   }, [planId]);
 
-  // Le compte vient d'être créé (email OU Google) avec le plan Trial gratuit
-  // par défaut côté backend. Si l'utilisateur avait explicitement choisi un
-  // plan sur la landing page, on démarre maintenant le paiement de CE plan :
-  // - plan gratuit (Trial) déjà actif -> rien à payer, on va direct au dashboard
-  // - plan payant -> redirection vers la page de paiement FedaPay
-  const applyPendingPlanThenRedirect = async () => {
-    const pendingPlanId = sessionStorage.getItem(PENDING_PLAN_STORAGE_KEY);
-    sessionStorage.removeItem(PENDING_PLAN_STORAGE_KEY);
-
-    if (!pendingPlanId) {
-      navigate('/admin');
-      return;
-    }
-
-    try {
-      const data = await checkout({ plan_id: Number(pendingPlanId) });
-      if (data.checkout_url) {
-        window.location.href = data.checkout_url;
-        return;
-      }
-    } catch {
-      // Ex: le plan choisi était le Trial gratuit déjà activé à l'inscription
-      // ("plan déjà utilisé") : ce n'est pas une vraie erreur, l'utilisateur a
-      // déjà son compte actif, on continue simplement vers le dashboard.
-    }
-    navigate('/admin');
+  // Le compte vient d'être créé (Trial gratuit activé par défaut côté backend).
+  // Si l'utilisateur avait choisi un plan sur la landing page, on l'envoie
+  // choisir son canal d'envoi + sa durée avant de payer (voir
+  // CompleteSubscriptionPage) — sinon, direct au dashboard.
+  const redirectAfterRegister = () => {
+    const hasPendingPlan = sessionStorage.getItem(PENDING_PLAN_STORAGE_KEY);
+    navigate(hasPendingPlan ? '/complete-subscription' : '/admin');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -71,7 +50,7 @@ export function RegisterPage() {
       {name,email,password,password_confirmation},
       {
         onSuccess: ()=>{
-          applyPendingPlanThenRedirect();
+          redirectAfterRegister();
         },
         onError: (err: any) => {
           const validationErrors = err?.response?.data?.errors;

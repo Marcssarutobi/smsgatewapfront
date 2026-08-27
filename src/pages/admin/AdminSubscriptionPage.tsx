@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Zap, Check, Sparkles, CreditCard } from 'lucide-react';
+import { Zap, Check, Sparkles, CreditCard, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Progress } from '../../components/ui/progress';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../../components/ui/dialog';
+import { ChannelDurationSelector } from '../../components/ChannelDurationSelector';
 import { usePlans } from '@/hook/features/usePlan';
 import { useCheckoutSubscribe, useCurrentSubscription } from '@/hook/features/useSubscribe';
+import { Plan } from '@/type/plan';
+import { SmsChannel } from '@/type/subscription';
 
 export function AdminSubscriptionPage() {
   const { data: subscription, isLoading: isLoadingSub } = useCurrentSubscription();
@@ -14,6 +17,7 @@ export function AdminSubscriptionPage() {
   const { mutate: checkout, isPending: isSubscribing } = useCheckoutSubscribe();
 
   const [isChangeModalOpen, setIsChangeModalOpen] = useState(false);
+  const [step, setStep] = useState<'plan' | 'channel'>('plan');
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -27,15 +31,18 @@ export function AdminSubscriptionPage() {
   const handleOpenChangeModal = () => {
     setSelectedPlanId(currentPlan?.id ?? plans[0]?.id ?? null);
     setCheckoutError(null);
+    setStep('plan');
     setIsChangeModalOpen(true);
   };
 
-  const handlePlanChange = () => {
+  const selectedPlan = plans.find((p) => p.id === selectedPlanId) ?? null;
+
+  const handlePlanChange = (channel: SmsChannel, durationMonths: 1 | 3 | 6 | 12) => {
     if (!selectedPlanId) return;
     setCheckoutError(null);
 
     checkout(
-      { plan_id: selectedPlanId },
+      { plan_id: selectedPlanId, channel, duration_months: durationMonths },
       {
         onSuccess: (data) => {
           if (data.free && data.subscription) {
@@ -193,71 +200,110 @@ export function AdminSubscriptionPage() {
         <DialogClose onClick={() => setIsChangeModalOpen(false)} />
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            {step === 'channel' && (
+              <button
+                type="button"
+                onClick={() => setStep('plan')}
+                className="p-1 -ml-1 rounded hover:bg-slate-100 cursor-pointer"
+              >
+                <ArrowLeft className="h-4 w-4 text-slate-500" />
+              </button>
+            )}
             <Zap className="h-5 w-5 text-indigo-600" />
-            Changer de Formule d'Abonnement
+            {step === 'plan' ? 'Changer de Formule d\'Abonnement' : `Formule ${selectedPlan?.name}`}
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Sélectionnez le plan correspondant le mieux à vos volumes d'envoi. Les plans payants
-            sont réglés en toute sécurité via FedaPay (Mobile Money, carte bancaire...).
+            {step === 'plan'
+              ? 'Sélectionnez le plan correspondant le mieux à vos volumes d\'envoi. Les plans payants sont réglés en toute sécurité via FedaPay (Mobile Money, carte bancaire...).'
+              : 'Choisissez comment envoyer vos SMS et pour combien de temps.'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 my-4">
-          {checkoutError && (
-            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs font-semibold text-red-700">
-              {checkoutError}
-            </div>
-          )}
-
-          {isLoadingPlans && <p className="text-xs text-slate-500">Chargement des plans...</p>}
-
-          {!isLoadingPlans && plans.map((plan) => (
-            <div
-              key={plan.id}
-              onClick={() => setSelectedPlanId(plan.id)}
-              className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                selectedPlanId === plan.id
-                  ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-600/20'
-                  : 'border-slate-200 hover:border-slate-300 bg-white'
-              }`}
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-900 text-sm">{plan.name}</span>
-                  {plan.id === currentPlan?.id && (
-                    <Badge variant="secondary" className="text-[10px]">Actuel</Badge>
-                  )}
+        {step === 'plan' && (
+          <>
+            <div className="space-y-3 my-4">
+              {checkoutError && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs font-semibold text-red-700">
+                  {checkoutError}
                 </div>
-                <p className="text-xs text-slate-500">
-                  {plan.sms_quota_monthly.toLocaleString()} SMS / mois • Jusqu'à {plan.max_devices} appareils
-                </p>
-                {plan.features && plan.features.length > 0 && (
-                  <p className="text-[10px] text-slate-400">
-                    {plan.features.join(' • ')}
-                  </p>
-                )}
-              </div>
+              )}
 
-              <span className="font-extrabold text-slate-900 text-lg">
-                {plan.price} {plan.currency}
-                <span className="text-xs text-slate-400 font-normal">/mois</span>
-              </span>
+              {isLoadingPlans && <p className="text-xs text-slate-500">Chargement des plans...</p>}
+
+              {!isLoadingPlans && plans.map((plan) => (
+                <div
+                  key={plan.id}
+                  onClick={() => setSelectedPlanId(plan.id)}
+                  className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                    selectedPlanId === plan.id
+                      ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-600/20'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900 text-sm">{plan.name}</span>
+                      {plan.id === currentPlan?.id && (
+                        <Badge variant="secondary" className="text-[10px]">Actuel</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      {plan.sms_quota_monthly.toLocaleString()} SMS / mois • Jusqu'à {plan.max_devices} appareils
+                    </p>
+                    {plan.features && plan.features.length > 0 && (
+                      <p className="text-[10px] text-slate-400">
+                        {plan.features.join(' • ')}
+                      </p>
+                    )}
+                  </div>
+
+                  <span className="font-extrabold text-slate-900 text-lg">
+                    {plan.price} {plan.currency}
+                    <span className="text-xs text-slate-400 font-normal">/mois</span>
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsChangeModalOpen(false)}>
-            Annuler
-          </Button>
-          <Button onClick={handlePlanChange} className="font-semibold" disabled={isSubscribing || !selectedPlanId}>
-            {isSubscribing
-              ? 'Redirection vers le paiement...'
-              : selectedPlanId && plans.find((p) => p.id === selectedPlanId)?.price !== '0.00'
-                ? 'Payer avec FedaPay'
-                : 'Confirmer le changement de plan'}
-          </Button>
-        </DialogFooter>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsChangeModalOpen(false)}>
+                Annuler
+              </Button>
+              <Button onClick={() => setStep('channel')} className="font-semibold" disabled={!selectedPlanId}>
+                Continuer
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+
+        {step === 'channel' && selectedPlan && (
+          <div className="space-y-4 my-2">
+            {subscription && (
+              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-800">
+                  Confirmer ce changement annule immédiatement votre période en cours (sans remboursement
+                  au prorata) et démarre une nouvelle période complète dès maintenant.
+                </p>
+              </div>
+            )}
+
+            {checkoutError && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs font-semibold text-red-700">
+                {checkoutError}
+              </div>
+            )}
+
+            <ChannelDurationSelector
+              plan={selectedPlan}
+              onConfirm={handlePlanChange}
+              isSubmitting={isSubscribing}
+              confirmLabel={
+                Number(selectedPlan.price) > 0 ? 'Payer avec FedaPay' : 'Confirmer le changement de plan'
+              }
+            />
+          </div>
+        )}
       </Dialog>
     </div>
   );
