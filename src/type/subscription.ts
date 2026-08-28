@@ -10,6 +10,7 @@ export interface Subscription {
   plan_id: number;
   status: SubscriptionStatus;
   sms_used: number;
+  extra_sms_credit: number;
   current_period_start: string; // date (YYYY-MM-DD)
   current_period_end: string;   // date (YYYY-MM-DD)
   channel: SmsChannel;
@@ -19,7 +20,27 @@ export interface Subscription {
   created_at: string;
   updated_at: string;
 
+  // Accesseurs calculés, exposés automatiquement par le backend (voir
+  // Subscription::$appends côté Laravel) — jamais à recalculer côté front.
+  sms_quota_total: number;
+  sms_credit_remaining: number;
+
   plan?: Plan; // présent si ->load('plan') / ->with('plan') côté back
+}
+
+// Réponse de GET /subscription/topup
+export interface TopupInfo {
+  available: boolean;
+  sms_count: number;
+  price: string | null;
+  currency: string;
+  credit_remaining: number;
+}
+
+// Réponse de POST /subscription/topup/checkout
+export interface TopupCheckoutResponse {
+  payment_id: number;
+  checkout_url: string;
 }
 
 // Payload de POST /subscription — réservé aux plans gratuits (ex: Trial).

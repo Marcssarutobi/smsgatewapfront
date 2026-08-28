@@ -4,6 +4,8 @@ import {
   PaymentStatusResponse,
   SubscribePayload,
   Subscription,
+  TopupCheckoutResponse,
+  TopupInfo,
 } from "../type/subscription";
 import { api } from "./api";
 
@@ -24,4 +26,11 @@ export const subscriptionService = {
   // après le retour de FedaPay (en complément du webhook, qui reste la source de vérité).
   getPaymentStatus: (paymentId: number) =>
     api.get<PaymentStatusResponse>(`/subscription/payments/${paymentId}`).then((r) => r.data),
+
+  // Achat de crédit SMS supplémentaire sur l'abonnement actif (même flux
+  // FedaPay que checkout(), mais n'ajoute que du crédit, sans nouvelle période).
+  getTopupInfo: () => api.get<TopupInfo>('/subscription/topup').then((r) => r.data),
+
+  checkoutTopup: () =>
+    api.post<TopupCheckoutResponse>('/subscription/topup/checkout').then((r) => r.data),
 };

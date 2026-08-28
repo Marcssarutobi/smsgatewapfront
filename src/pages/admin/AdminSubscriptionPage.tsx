@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Zap, Check, Sparkles, CreditCard, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { Zap, Check, Sparkles, CreditCard, AlertTriangle, ArrowLeft, PlusCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -7,14 +7,17 @@ import { Progress } from '../../components/ui/progress';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../../components/ui/dialog';
 import { ChannelDurationSelector } from '../../components/ChannelDurationSelector';
 import { usePlans } from '@/hook/features/usePlan';
-import { useCheckoutSubscribe, useCurrentSubscription } from '@/hook/features/useSubscribe';
+import { useCheckoutSubscribe, useCurrentSubscription, useTopupInfo, useCheckoutTopup } from '@/hook/features/useSubscribe';
 import { Plan } from '@/type/plan';
 import { SmsChannel } from '@/type/subscription';
+import toast from 'react-hot-toast';
 
 export function AdminSubscriptionPage() {
   const { data: subscription, isLoading: isLoadingSub } = useCurrentSubscription();
   const { data: plans = [], isLoading: isLoadingPlans } = usePlans();
   const { mutate: checkout, isPending: isSubscribing } = useCheckoutSubscribe();
+  const { data: topupInfo } = useTopupInfo();
+  const { mutateAsync: checkoutTopup, isPending: isBuyingTopup } = useCheckoutTopup();
 
   const [isChangeModalOpen, setIsChangeModalOpen] = useState(false);
   const [step, setStep] = useState<'plan' | 'channel'>('plan');
@@ -24,11 +27,21 @@ export function AdminSubscriptionPage() {
 
   const currentPlan = subscription?.plan;
   const usedSms = subscription?.sms_used ?? 0;
-  // Le quota affiché doit couvrir TOUTE la durée souscrite (ex: plan à 1000
-  // SMS/mois pris pour 3 mois -> 3000 SMS), pas juste le quota mensuel du plan.
-  const maxSms = (currentPlan?.sms_quota_monthly ?? 0) * Math.max(1, subscription?.duration_months ?? 1);
-  const remainingSms = Math.max(0, maxSms - usedSms);
+  // Calculés côté backend (voir Subscription::$appends) : couvrent déjà la
+  // durée souscrite ET tout crédit supplémentaire acheté (voir carte
+  // "Recharge de crédit" plus bas) — ne jamais recalculer ça côté front.
+  const maxSms = subscription?.sms_quota_total ?? 0;
+  const remainingSms = subscription?.sms_credit_remaining ?? 0;
   const usagePercentage = maxSms > 0 ? Math.round((usedSms / maxSms) * 100) : 0;
+
+  const handleBuyTopup = async () => {
+    try {
+      const data = await checkoutTopup();
+      window.location.href = data.checkout_url;
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? "Impossible de démarrer l'achat pour le moment.");
+    }
+  };
 
   const handleOpenChangeModal = () => {
     setSelectedPlanId(currentPlan?.id ?? plans[0]?.id ?? null);
@@ -81,7 +94,7 @@ export function AdminSubscriptionPage() {
         <div>
           <h2 className="text-xl font-bold text-slate-900">Abonnement & Consommation</h2>
           <p className="text-xs text-slate-500">
-            Suivez votre quota de SMS mensuel et gérez votre formule de facturation.
+            Suivez votre crédit SMS et gérez votre formule de facturation.
           </p>
         </div>
         <Button onClick={handleOpenChangeModal} className="font-semibold gap-2 shadow-sm">
@@ -125,7 +138,7 @@ export function AdminSubscriptionPage() {
             <CardContent className="space-y-6 pt-2">
               <div className="space-y-2 p-4 rounded-xl bg-white border border-slate-200/80 shadow-xs">
                 <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-slate-700">Consommation Mensuelle SMS</span>
+                  <span className="text-slate-700">Crédit SMS consommé</span>
                   <span className="text-indigo-600 font-mono">
                     {usedSms.toLocaleString()} / {maxSms.toLocaleString()} SMS
                   </span>
@@ -138,6 +151,36 @@ export function AdminSubscriptionPage() {
                   </span>
                 </div>
               </div>
+
+              {topupInfo?.available && (
+                <div
+                  className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                    remainingSms === 0
+                      ? 'bg-rose-50 border-rose-200'
+                      : 'bg-indigo-50/50 border-indigo-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <PlusCircle className={`h-4 w-4 shrink-0 mt-0.5 ${remainingSms === 0 ? 'text-rose-600' : 'text-indigo-600'}`} />
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">
+                        {remainingSms === 0 ? 'Crédit SMS épuisé' : 'Besoin de plus de crédit ?'}
+                      </p>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        Achetez {topupInfo.sms_count.toLocaleString()} SMS supplémentaires pour {Number(topupInfo.price).toLocaleString('fr-FR')} {topupInfo.currency}, valable jusqu'à la fin de votre période en cours.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleBuyTopup}
+                    disabled={isBuyingTopup}
+                    size="sm"
+                    className="font-semibold shrink-0"
+                  >
+                    {isBuyingTopup ? 'Redirection...' : 'Acheter un pack'}
+                  </Button>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4 text-xs">
                 <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
@@ -168,10 +211,9 @@ export function AdminSubscriptionPage() {
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
                   <span>
-                    {currentPlan?.sms_quota_monthly?.toLocaleString()} SMS / mois
-                    {(subscription?.duration_months ?? 1) > 1
-                      ? ` (${maxSms.toLocaleString()} SMS sur ${subscription?.duration_months} mois)`
-                      : ''}
+                    {maxSms.toLocaleString()} SMS de crédit
+                    {(subscription?.duration_months ?? 1) > 1 && ` (sur ${subscription?.duration_months} mois)`}
+                    {(subscription?.extra_sms_credit ?? 0) > 0 && ` — dont ${subscription?.extra_sms_credit.toLocaleString()} rechargés`}
                   </span>
                 </li>
                 <li className="flex items-start gap-2">

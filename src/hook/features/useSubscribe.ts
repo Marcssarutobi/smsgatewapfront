@@ -38,3 +38,14 @@ export function usePaymentStatus(paymentId: number | null, enabled: boolean) {
         refetchInterval: (query) => (query.state.data?.status === 'pending' ? 2000 : false),
     });
 }
+
+// Infos avant achat (quantité, prix, disponibilité) pour le plan actuel.
+export function useTopupInfo() {
+    return useQuery({ queryKey: ['subscription-topup'], queryFn: subscriptionService.getTopupInfo });
+}
+
+// Démarre le paiement FedaPay d'un pack de recharge (jamais gratuit,
+// contrairement à checkout() — toujours une redirection vers checkout_url).
+export function useCheckoutTopup() {
+    return useMutation({ mutationFn: subscriptionService.checkoutTopup });
+}
