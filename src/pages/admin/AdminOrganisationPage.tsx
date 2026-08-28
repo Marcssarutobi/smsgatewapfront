@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Save, CheckCircle2, Mail as GlobeIcon, Phone, MapPin } from 'lucide-react';
+import { Building2, Save, CheckCircle2, Mail as GlobeIcon, Phone, MapPin, Radio } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -11,6 +11,8 @@ interface OrganisationForm {
   website: string;
   phone: string;
   address: string;
+  mtn_sender_address: string;
+  mtn_country_code: string;
 }
 
 const EMPTY_FORM: OrganisationForm = {
@@ -19,6 +21,8 @@ const EMPTY_FORM: OrganisationForm = {
   website: '',
   phone: '',
   address: '',
+  mtn_sender_address: '',
+  mtn_country_code: '229',
 };
 
 export function AdminOrganisationPage() {
@@ -38,6 +42,8 @@ export function AdminOrganisationPage() {
         website: organisation.website ?? '',
         phone: organisation.phone ?? '',
         address: organisation.address ?? '',
+        mtn_sender_address: organisation.mtn_sender_address ?? '',
+        mtn_country_code: organisation.mtn_country_code ?? '229',
       });
     }
   }, [organisation]);
@@ -140,6 +146,59 @@ export function AdminOrganisationPage() {
                 />
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <Radio className="h-4 w-4 text-indigo-600" />
+              Mode d'envoi & Paramètres Réseau (MTN)
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Mode actuel :{' '}
+              <span className="font-semibold text-slate-700">
+                {organisation?.preferred_sms_channel === 'network' ? 'Réseau (MTN)' : 'Téléphone (Device)'}
+              </span>
+              {' '}— pour changer de mode, souscrivez un nouveau plan depuis la page Abonnement.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700">Nom d'expéditeur (senderAddress)</label>
+                <Input
+                  type="text"
+                  maxLength={11}
+                  value={formData.mtn_sender_address}
+                  onChange={(e) => setFormData({ ...formData, mtn_sender_address: e.target.value })}
+                  placeholder="Ex: MonEntreprise"
+                />
+                <p className="text-[11px] text-slate-400">
+                  Nom affiché comme expéditeur des SMS envoyés en mode Réseau (11 caractères max, alphanumérique). Laissez vide pour utiliser le nom par défaut attribué par MTN.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700">Indicatif pays</label>
+                <Input
+                  type="text"
+                  maxLength={3}
+                  value={formData.mtn_country_code}
+                  onChange={(e) => setFormData({ ...formData, mtn_country_code: e.target.value })}
+                  placeholder="229"
+                />
+                <p className="text-[11px] text-slate-400">
+                  Utilisé pour normaliser vos numéros de destinataires en mode Réseau (229 = Bénin).
+                </p>
+              </div>
+            </div>
+
+            {organisation?.preferred_sms_channel !== 'network' && (
+              <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Ces réglages ne prennent effet qu'en mode Réseau. Vous êtes actuellement en mode Téléphone : ils sont sans impact tant que vous n'avez pas changé de mode.
+              </p>
+            )}
           </CardContent>
         </Card>
 

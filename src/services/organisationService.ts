@@ -8,7 +8,7 @@ export const organisationService = {
         return data
     },
 
-    update: async (payload:Pick<Organisation,'name'> & Partial<Pick<Organisation, 'signature' | 'website' | 'phone' | 'address'>>)=>{
+    update: async (payload:Pick<Organisation,'name'> & Partial<Pick<Organisation, 'signature' | 'website' | 'phone' | 'address' | 'mtn_sender_address' | 'mtn_country_code'>>)=>{
         const {data} = await api.put('/organisation',payload)
         return data
     }
