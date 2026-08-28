@@ -3,9 +3,21 @@
 export interface PlatformDashboardStats {
   users: { total: number; new_this_month: number };
   devices: { online: number; offline: number; total: number };
-  sms: { today: number; this_month: number; failed_this_month: number };
+  sms: {
+    today: number;
+    this_month: number;
+    failed_this_month: number;
+    sent_via_device_this_month: number;
+    sent_via_mtn_this_month: number;
+  };
   subscriptions_by_plan: Record<string, number>;
   revenue_this_month: number;
+  // Coût réel dû à MTN ce mois-ci (SMS réseau réellement envoyés × tarif
+  // unitaire courant) et bénéfice net (revenu - ce coût) — la marge
+  // disponible pour l'hébergement et les autres charges.
+  mtn_cost_this_month: number;
+  sms_unit_price: number;
+  net_profit_this_month: number;
   latest_signups: Array<{
     id: number;
     name: string;

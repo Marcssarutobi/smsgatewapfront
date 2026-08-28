@@ -14,6 +14,9 @@ import {
   CheckCircle,
   Mail,
   MailOpen,
+  Receipt,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -107,7 +110,41 @@ export function PlatformAdminPage() {
         />
       </div>
 
-      {/* Répartition des abonnements + derniers inscrits */}
+      {/* Rentabilité du mode Réseau (MTN) : combien de SMS sont réellement
+          partis via l'opérateur ce mois-ci, ce que ça coûte à la plateforme,
+          et ce qu'il reste (revenu - ce coût) pour couvrir hébergement et
+          autres charges. */}
+      <div>
+        <h2 className="text-sm font-bold text-slate-700 mb-3">Rentabilité — Mode Réseau (MTN)</h2>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <StatCard
+            icon={Send}
+            label="SMS envoyés via MTN ce mois-ci"
+            value={statsLoading ? '—' : stats?.sms.sent_via_mtn_this_month ?? 0}
+            hint={
+              statsLoading
+                ? undefined
+                : `${stats?.sms.sent_via_device_this_month ?? 0} via téléphone (Device)`
+            }
+          />
+          <StatCard
+            icon={Receipt}
+            label="Coût dû à MTN ce mois-ci"
+            value={statsLoading ? '—' : `${(stats?.mtn_cost_this_month ?? 0).toLocaleString()} FCFA`}
+            hint={
+              statsLoading
+                ? undefined
+                : `au tarif actuel de ${stats?.sms_unit_price ?? 0} FCFA/SMS`
+            }
+          />
+          <StatCard
+            icon={(stats?.net_profit_this_month ?? 0) >= 0 ? TrendingUp : TrendingDown}
+            label="Bénéfice net ce mois-ci"
+            value={statsLoading ? '—' : `${(stats?.net_profit_this_month ?? 0).toLocaleString()} FCFA`}
+            hint="Revenu − coût MTN, avant hébergement et autres charges"
+          />
+        </div>
+      </div>
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardHeader>
