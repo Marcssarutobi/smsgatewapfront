@@ -26,6 +26,7 @@ import { Badge } from '../components/ui/badge';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../components/ui/accordion';
 import { MOCK_FAQS } from '../data/mockData';
 import { usePlans } from '@/hook/features/usePlan';
+import { useSmsPricing } from '@/hook/features/useSmsPricing';
 
 // Formate un prix XOF (chaîne décimale côté back, ex "5000.00") en "5 000 FCFA".
 function formatPrice(price: string, currency: string): string {
@@ -36,6 +37,7 @@ function formatPrice(price: string, currency: string): string {
 
 export function LandingPage() {
   const { data: plans = [], isLoading: isLoadingPlans } = usePlans();
+  const { data: smsPricing } = useSmsPricing();
   // On n'affiche jamais le plan Trial dans la grille tarifaire : c'est le plan
   // par défaut attribué automatiquement à l'inscription (voir "Démarrer
   // gratuitement" / "Créer un compte gratuitement" ci-dessous), pas une offre
@@ -60,11 +62,11 @@ export function LandingPage() {
               </div>
 
               <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl xl:text-6xl leading-[1.12]">
-                Envoyez vos SMS depuis vos <span className="text-indigo-600 underline decoration-indigo-300 decoration-wavy">propres smartphones</span> Android
+                Envoyez vos SMS depuis votre <span className="text-indigo-600 underline decoration-indigo-300 decoration-wavy">propre téléphone</span> ou notre réseau
               </h1>
 
               <p className="text-lg text-slate-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
-                Connectez vos téléphones Android à notre API REST en 2 minutes via QR code. Profitez de vos forfaits SMS locaux à tarif préférentiel pour envoyer vos notifications, OTP et alertes à un coût imbattable.
+                Connectez vos téléphones Android à notre API REST en 2 minutes via QR code et profitez de vos forfaits SMS locaux à tarif préférentiel. Vous n'avez pas de téléphone à connecter ? Envoyez directement via notre réseau, facturé simplement au SMS envoyé.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
@@ -428,6 +430,15 @@ export function LandingPage() {
             Aucuns frais cachés par SMS. Choisissez le nombre de téléphones connectés et le volume souhaité.
             Facturation mensuelle, sans engagement — changez ou annulez à tout moment.
           </p>
+          {smsPricing && (
+            <p className="text-sm text-slate-500">
+              Pas de téléphone à connecter ? Envoyez directement via notre réseau, facturé{' '}
+              <span className="font-semibold text-slate-700">
+                {Number(smsPricing.price_per_sms).toLocaleString('fr-FR')} {smsPricing.currency} / SMS
+              </span>{' '}
+              envoyé, sans forfait à souscrire.
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
