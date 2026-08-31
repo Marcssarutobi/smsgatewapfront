@@ -621,11 +621,13 @@ function SmsPricingTab() {
 
   const [pricePerSms, setPricePerSms] = useState('');
   const [currency, setCurrency] = useState('XOF');
+  const [networkEnabled, setNetworkEnabled] = useState(false);
 
   useEffect(() => {
     if (pricing) {
       setPricePerSms(pricing.price_per_sms);
       setCurrency(pricing.currency);
+      setNetworkEnabled(pricing.network_enabled);
     }
   }, [pricing]);
 
@@ -633,7 +635,7 @@ function SmsPricingTab() {
     e.preventDefault();
 
     updatePricing(
-      { price_per_sms: Number(pricePerSms), currency },
+      { price_per_sms: Number(pricePerSms), currency, network_enabled: networkEnabled },
       {
         onSuccess: () => toast.success('Tarif SMS mis à jour'),
         onError: (err: any) => {
@@ -664,6 +666,36 @@ function SmsPricingTab() {
             <p className="text-sm text-slate-400 py-4">Chargement...</p>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div
+                onClick={() => setNetworkEnabled((v) => !v)}
+                className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-colors ${
+                  networkEnabled ? 'border-emerald-300 bg-emerald-50/60' : 'border-slate-200 bg-slate-50'
+                }`}
+              >
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Mode Réseau activé</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {networkEnabled
+                      ? "Les clients ayant choisi ce canal peuvent envoyer des SMS dès maintenant."
+                      : "Envoi bloqué pour tous les clients en mode Réseau, même s'ils l'ont choisi à la souscription."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={networkEnabled}
+                  className={`relative shrink-0 h-6 w-11 rounded-full transition-colors ${
+                    networkEnabled ? 'bg-emerald-500' : 'bg-slate-300'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                      networkEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-700">Prix par SMS</label>

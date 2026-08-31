@@ -4,6 +4,7 @@ export interface SmsPricingSetting {
   id: number;
   price_per_sms: string; // decimal non casté côté back -> string
   currency: string;
+  network_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -11,6 +12,7 @@ export interface SmsPricingSetting {
 export interface SmsPricingPayload {
   price_per_sms: number;
   currency?: string;
+  network_enabled?: boolean;
 }
 
 export const adminSmsPricingService = {
