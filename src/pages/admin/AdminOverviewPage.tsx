@@ -7,6 +7,7 @@ import {
   PieChart,
   Plus,
   Battery,
+  RadioTower,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -93,7 +94,10 @@ export function AdminOverviewPage() {
   const maxDailyVal = Math.max(1, ...dailyVolume.map((d) => d.val));
   const avgDailyVal = Math.round(dailyVolume.reduce((sum, d) => sum + d.val, 0) / dailyVolume.length);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (sms: SmsMessage) => {
+    const status = sms.status;
+    const isNetwork = sms.channel === 'mtn';
+
     switch (status) {
       case 'delivered':
         return <Badge variant="success">Livré</Badge>;
@@ -101,7 +105,7 @@ export function AdminOverviewPage() {
         return <Badge variant="default">Envoyé</Badge>;
       case 'pending':
       case 'queued':
-        return <Badge variant="warning" className="font-medium">En attente</Badge>;
+        return <Badge variant="warning" className="font-medium">{isNetwork ? 'MTN en cours' : 'En attente'}</Badge>;
       case 'failed':
         return <Badge variant="destructive">Échec</Badge>;
       default:
@@ -337,7 +341,15 @@ export function AdminOverviewPage() {
                     <TableCell className="font-mono text-xs font-semibold text-slate-800">{log.recipient}</TableCell>
                     <TableCell className="text-xs text-slate-600 truncate max-w-[280px]">{log.content}</TableCell>
                     <TableCell className="text-xs text-slate-600">
-                      {log.device_sim?.device ? (
+                      {log.channel === 'mtn' ? (
+                        <>
+                          <span className="font-medium text-slate-800 flex items-center gap-1.5">
+                            <RadioTower className="h-3.5 w-3.5 text-indigo-500" />
+                            Réseau MTN
+                          </span>
+                          <span className="text-[10px] text-slate-400">API opérateur</span>
+                        </>
+                      ) : log.device_sim?.device ? (
                         <>
                           <span className="font-medium text-slate-800 block">{log.device_sim.device.name}</span>
                           <span className="text-[10px] text-slate-400">
@@ -348,7 +360,7 @@ export function AdminOverviewPage() {
                         <span className="text-[10px] text-slate-400">Non assigné</span>
                       )}
                     </TableCell>
-                    <TableCell>{getStatusBadge(log.status)}</TableCell>
+                    <TableCell>{getStatusBadge(log)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

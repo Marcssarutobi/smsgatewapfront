@@ -3,12 +3,14 @@ import type { Device } from './device';
 import type { DeviceSim } from './deviceSim';
 
 export type SmsStatus = 'pending' | 'queued' | 'sent' | 'delivered' | 'failed';
+export type SmsChannel = 'device' | 'mtn';
 
 export interface SmsMessage {
   id: number;
   user_id: number;
   api_key_id: number;
   device_sim_id: number | null;
+  channel: SmsChannel;
   recipient: string;
   content: string;
   status: SmsStatus;
@@ -38,4 +40,5 @@ export interface SendSmsPayload {
 export interface SendSmsResponse {
   id: number;
   status: SmsStatus;
+  channel: SmsChannel;
 }

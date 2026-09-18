@@ -8,6 +8,7 @@ import {
   Clock,
   RefreshCcw,
   Smartphone,
+  RadioTower,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -17,6 +18,7 @@ import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import { useSmsHistory } from '@/hook/features/useSmsMessage';
+import type { SmsMessage } from '@/type/smsMessage';
 
 export function AdminSmsLogsPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,16 +44,19 @@ export function AdminSmsLogsPage() {
     setTimeout(() => setExportMessage(null), 3000);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (log: SmsMessage) => {
+    const status = log.status;
+    const isNetwork = log.channel === 'mtn';
+
     switch (status) {
       case 'delivered':
         return <Badge variant="success">Livré</Badge>;
       case 'sent':
         return <Badge variant="default">Envoyé</Badge>;
       case 'queued':
-        return <Badge variant="warning">En file d'attente (device)</Badge>;
+        return <Badge variant="warning">{isNetwork ? 'Envoi MTN en cours' : "En file d'attente (device)"}</Badge>;
       case 'pending':
-        return <Badge variant="secondary">En attente d'un appareil</Badge>;
+        return <Badge variant={isNetwork ? 'warning' : 'secondary'}>{isNetwork ? 'En attente MTN' : "En attente d'un appareil"}</Badge>;
       case 'failed':
         return <Badge variant="destructive">Échec</Badge>;
       default:
@@ -112,7 +117,8 @@ export function AdminSmsLogsPage() {
                 { id: 'all', label: 'Tous' },
                 { id: 'delivered', label: 'Livrés' },
                 { id: 'sent', label: 'Envoyés' },
-                { id: 'queued', label: 'En attente' },
+                { id: 'pending', label: 'En attente' },
+                { id: 'queued', label: 'En file' },
                 { id: 'failed', label: 'Échecs' },
               ].map((tab) => (
                 <button
@@ -175,7 +181,17 @@ export function AdminSmsLogsPage() {
                   </TableCell>
 
                   <TableCell className="text-xs text-slate-700">
-                    {log.device_sim ? (
+                    {log.channel === 'mtn' ? (
+                      <>
+                        <div className="flex items-center gap-1.5">
+                          <RadioTower className="h-3.5 w-3.5 text-indigo-500" />
+                          <span className="font-medium">Réseau MTN</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 block ml-5">
+                          API opérateur
+                        </span>
+                      </>
+                    ) : log.device_sim ? (
                       <>
                         <div className="flex items-center gap-1.5">
                           <Smartphone className="h-3.5 w-3.5 text-slate-400" />
@@ -190,7 +206,7 @@ export function AdminSmsLogsPage() {
                     )}
                   </TableCell>
 
-                  <TableCell>{getStatusBadge(log.status)}</TableCell>
+                  <TableCell>{getStatusBadge(log)}</TableCell>
                 </TableRow>
               ))}
 
